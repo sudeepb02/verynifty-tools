@@ -49,15 +49,23 @@ contract NiftyTools is Ownable {
         maxIds = _maxIds;
     }
 
+    function setFee(uint256 _fee) public onlyOwner {
+        fee = _fee;
+    }
+
+    /**
+        @notice claim MUSE tokens from multiple vNFTs
+        @dev contract should be whitelisted as caretaker beforehand
+     */
     function claimMultiple(uint256[] memory ids) external {
-        require(ids.length <= maxIds, "Too many ids");
+        require(ids.length <= maxIds, "LENGTH");
 
         for (uint256 i = 0; i < ids.length; i++) {
             vnft.claimMiningRewards(ids[i]);
         }
 
         // Charge fees
-        uint256 museFee = muse.balanceOf(address(this)).mul(fee).div(10000);
+        uint256 museFee = muse.balanceOf(address(this)).sub(fee);
         require(muse.transfer(owner(), museFee));
 
         // Send rest to user
@@ -73,15 +81,21 @@ contract NiftyTools is Ownable {
         }
     }
 
+    /**
+        @notice feed multiple vNFTs with items/gems
+        @dev contract should be whitelisted as caretaker beforehand   
+        @dev contract should have MUSE allowance  
+     */
     function feedMultiple(uint256[] memory ids, uint256[] memory itemIds)
         external
     {
         require(ids.length <= maxIds, "Too many ids");
-        uint256 totalMuse = _checkAmount(itemIds);
+        uint256 museCost = _checkAmount(itemIds);
         require(
-            totalMuse <= muse.allowance(msg.sender, address(this)),
-            "Insufficient MUSE"
+            muse.transferFrom(msg.sender, address(this), museCost),
+            "MUSE:Items"
         );
+        require(muse.transferFrom(msg.sender, owner(), fee), "MUSE:fee");
 
         for (uint256 i = 0; i < ids.length; i++) {
             vnft.buyAccesory(ids[i], itemIds[i]);
