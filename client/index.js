@@ -10,6 +10,7 @@ const MIN_TIME = 6 * 60 * 60; // 6 hours
 const BLOCK_TIME = 13;
 let userNFTs = [];
 let scanned = false;
+let totalEvents = 0;
 
 //Executed when page finish loading
 $(document).ready(async () => {
@@ -318,6 +319,60 @@ async function killNFT(id) {
   }
 }
 
+function renderEvent(event, txHash) {
+  totalEvents++;
+  return $("#events-nfts").append(`
+    <tr>
+      <th scope="row">${totalEvents}</th>
+      <td>${event}</td>
+      <td><a href="https://etherscan.io/tx/${txHash}" target="_blank">check</a></td>
+    </tr>
+  `);
+}
+
+async function checkEvents() {
+  const block = await web3.eth.getBlockNumber();
+  $("#events-nfts").empty();
+
+  let mintEvents = await instance.getPastEvents("Transfer", {
+    filter: {
+      from: ZERO_ADDRESS,
+    },
+    fromBlock: block - 1000,
+    toBlock: "latest",
+  });
+  console.log(mintEvents[0]);
+  mintEvents = mintEvents.map((e) => {
+    return { name: "Minted", txHash: e.transactionHash, block: e.blockNumber };
+  });
+
+  let fatalityEvents = await instance.getPastEvents("VnftFatalized", {
+    fromBlock: block - 1000,
+    toBlock: "latest",
+  });
+  fatalityEvents = fatalityEvents.map((e) => {
+    return { name: "Killed", txHash: e.transactionHash, block: e.blockNumber };
+  });
+
+  let consumeEvents = await instance.getPastEvents("VnftConsumed", {
+    fromBlock: block - 1000,
+    toBlock: "latest",
+  });
+  consumeEvents = consumeEvents.map((e) => {
+    return {
+      name: "Item Consumed",
+      txHash: e.transactionHash,
+      block: e.blockNumber,
+    };
+  });
+
+  const totalEvents = mintEvents.concat(fatalityEvents).concat(consumeEvents);
+
+  totalEvents
+    .sort((a, b) => b.block - a.block)
+    .forEach((e) => renderEvent(e.name, e.txHash));
+}
+
 function setUserAcc() {
   $("#account")
     .html(user.substring(0, 8) + "..." + user.substring(34, 42))
@@ -332,6 +387,8 @@ $("#eventsLink").click(() => {
 
   $("#eventsLink").addClass("active");
   $("#events-container").show();
+
+  checkEvents();
 });
 
 $("#scannerLink").click(() => {
