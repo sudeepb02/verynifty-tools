@@ -118,6 +118,26 @@ async function fetchNFTs() {
         `);
     });
 
+  console.log(tokenList);
+
+  const totalRewards = tokenList
+    .map((t) => +fromWei(t._expectedReward))
+    .reduce((a, b) => a + b);
+
+  console.log(totalRewards);
+
+  $("#user-nfts").append(`
+        <tr class="table-info">
+            <th scope="row"></th>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="font-weight-bold">${Number(totalRewards).toFixed(2)}</td>
+            <td></td>
+        </tr>
+        `);
+
   $("#total-nfts").html(`Total: ${totalOwned}`);
 }
 
@@ -126,3 +146,29 @@ function setUserAcc() {
     .html(user.substring(0, 8) + "..." + user.substring(34, 42))
     .attr("href", `https://etherscan.io/address/${user}`);
 }
+
+// NAVIGATION
+
+// $("#balanceLink").click(() => {
+//   $("#stake-container, #home-container").hide();
+//   $("#stakeLink, #homeLink").removeClass("active");
+
+//   $("#balanceLink").addClass("active");
+//   $("#balance-container").show();
+// });
+
+$("#scannerLink").click(() => {
+  $("#nft-container, #events-container").hide();
+  $("#homeLink, #eventsLink").removeClass("active");
+
+  $("#scannerLink").addClass("active");
+  $("#scanner-container").show();
+});
+
+$("#homeLink").click(() => {
+  $("#scanner-container, #events-container").hide();
+  $("#scannerLink, #eventsLink").removeClass("active");
+
+  $("#homeLink").addClass("active");
+  $("#nft-container").show();
+});
