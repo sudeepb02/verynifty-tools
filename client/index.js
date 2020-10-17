@@ -236,7 +236,10 @@ async function scanMarket() {
             _level,
             _expectedReward,
             starvingTime,
-            timeRemaining: +_timeUntilStarving - currentTime,
+            timeRemaining:
+              +_timeUntilStarving > currentTime
+                ? +_timeUntilStarving - currentTime
+                : 0,
           });
         } catch (error) {
           console.log("Dead", tokenId);
@@ -256,14 +259,22 @@ async function scanMarket() {
   soonIds
     .sort((a, b) => a.timeRemaining - b.timeRemaining)
     .forEach((t) => {
-      const tableColor = t.timeRemaining < 3600 ? "table-danger" : "";
+      let tableColor = "";
+
+      if (t.timeRemaining < 3600) tableColor = "table-warning";
+      if (t._score > 1000) tableColor = "table-danger";
+
+      let link = `<td><a href="https://gallery.verynifty.io/nft/${t.tokenId}" target="_blank">check</a></td>`;
+
+      if (t.timeRemaining === 0)
+        link = `<td><a href="#" onclick="killNFT(${t.tokenId})">kill!</a></td>`;
       $("#scan-nfts").append(`
         <tr class="${tableColor}">
             <th scope="row">${t.tokenId}</th>
             <td>${t._level}</td>
             <td>${t._score}</td>
             <td>${t.starvingTime}</td>
-            <td><a href="https://gallery.verynifty.io/nft/${t.tokenId}" target="_blank">check</a></td>
+            ${link}
         </tr>
         `);
     });
@@ -272,6 +283,25 @@ async function scanMarket() {
   console.log("Total tokens minted:", mintEvents.length);
   console.log("Total items consumed:", consumeEvents.length);
   console.log("Total NFTs dying soon:", soonIds.length);
+}
+
+async function killNFT(id) {
+  console.log("killing", id);
+  const recipientId = Number(
+    prompt(
+      "Please enter the ID of the token receiving the rewards",
+      "Your Token ID"
+    )
+  );
+  try {
+    const { _alive } = await instance.methods.getVnftInfo(recipientId).call();
+
+    if (_alive === false)
+      await instance.methods.fatality(id, recipientId).send({});
+    else alert("Error: vNFT is not dead");
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
 function setUserAcc() {
