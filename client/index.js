@@ -44,6 +44,8 @@ async function fetchNFTs() {
   let tokens = events.map((e) => e.returnValues.tokenId);
   tokens = _.uniq(tokens);
 
+  let tokenList = [];
+
   for (let i = 0; i < tokens.length; i++) {
     const tokenId = tokens[i];
 
@@ -66,52 +68,55 @@ async function fetchNFTs() {
 
       if (_owner == web3.utils.toChecksumAddress(user)) {
         totalOwned++;
-
         const currentTime = Date.now() / 1000;
 
-        const timeRemaining = Math.floor(+_timeUntilStarving - currentTime);
-        const timeToMine = Math.floor(
-          +_lastTimeMined + 24 * 60 * 60 - currentTime
-        );
         const mineTime =
           +_lastTimeMined + 24 * 60 * 60 < currentTime
             ? "NOOOOWWW!!"
-            : new Date(
-                (+_lastTimeMined + 24 * 60 * 60) * 1000
-              ).toLocaleTimeString("en-US");
+            : new Date((+_lastTimeMined + 24 * 60 * 60) * 1000).toLocaleString(
+                "en-US"
+              );
         const starvingTime =
           +_timeUntilStarving < currentTime
-            ? "NOOOOWWW!!"
-            : new Date(+_timeUntilStarving * 1000).toLocaleTimeString("en-US");
+            ? "DEAD!!"
+            : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
+        const timeRemaining = Math.floor(+_timeUntilStarving - currentTime);
 
-        console.log(
-          `Token ${tokenId} (lvl ${_level}) \n\tScore: ${_score} \n\tRewards: ${Number(
-            web3.utils.fromWei(_expectedReward)
-          ).toFixed(2)} \n\tClaim time: ${mineTime} (${
-            timeToMine < 0 ? 0 : timeToMine
-          } sec) \n\tWill die at: ${starvingTime} (${
-            timeRemaining < 0 ? 0 : timeRemaining
-          } sec)`
-        );
-
-        $("#user-nfts").append(`
-            <tr>
-                <th scope="row">${tokenId}</th>
-                <td>${_score}</td>
-                <td>${new Date(+_timeUntilStarving * 1000).toLocaleString(
-                  "en-US"
-                )}</td>
-                <td>${new Date(
-                  (+_lastTimeMined + 24 * 60 * 60) * 1000
-                ).toLocaleString("en-US")}</td>
-                <td><a href="https://gallery.verynifty.io/nft/${tokenId}" target="_blank">check</a></td>
-            </tr>
-        `);
+        tokenList.push({
+          tokenId,
+          _level,
+          _score,
+          _expectedReward,
+          starvingTime,
+          mineTime,
+          timeRemaining,
+        });
       }
     } catch (error) {
       console.log(error.message);
     }
   }
+
+  $("#user-nfts").empty();
+
+  tokenList
+    .sort((a, b) => b._level - a._level)
+    .forEach((t) => {
+      const tableColor = t.timeRemaining < 3600 ? "table-danger" : "";
+      $("#user-nfts").append(`
+        <tr class="${tableColor}">
+            <th scope="row">${t.tokenId}</th>
+            <td>${t._level}</td>
+            <td>${t._score}</td>
+            <td>${t.starvingTime}</td>
+            <td>${t.mineTime}</td>
+            <td>${Number(fromWei(t._expectedReward)).toFixed(2)}</td>
+            <td><a href="https://gallery.verynifty.io/nft/${
+              t.tokenId
+            }" target="_blank">check</a></td>
+        </tr>
+        `);
+    });
 
   $("#total-nfts").html(`Total: ${totalOwned}`);
 }
