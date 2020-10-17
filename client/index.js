@@ -245,6 +245,12 @@ async function scanMarket() {
     }
   }
 
+  $("#market-info").append(`
+    <p>Total Minted: ${mintEvents.length}</p>
+    <p>Total items consumed: ${consumeEvents.length}</p>
+    <p>Total NFTs dying soon: ${soonIds.length}</p>
+  `);
+
   $("#scan-nfts").empty();
 
   soonIds
