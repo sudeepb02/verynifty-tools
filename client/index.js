@@ -331,6 +331,7 @@ function renderEvent(event, txHash) {
 }
 
 async function checkEvents() {
+  totalEvents = 0;
   const block = await web3.eth.getBlockNumber();
   $("#events-nfts").empty();
 
