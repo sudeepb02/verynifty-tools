@@ -8,6 +8,8 @@ const CREATION_BLOCK = 11023280;
 const ONE_DAY = 24 * 60 * 60;
 const MIN_TIME = 6 * 60 * 60; // 6 hours
 const BLOCK_TIME = 13;
+let userNFTs = [];
+let scanned = false;
 
 //Executed when page finish loading
 $(document).ready(async () => {
@@ -23,6 +25,7 @@ $(document).ready(async () => {
     console.log("Account Changed!", accounts[0]);
     user = _accounts[0];
     setUserAcc();
+    userNFTs = [];
     fetchNFTs();
   });
 
@@ -33,83 +36,90 @@ $(document).ready(async () => {
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
 
   setUserAcc();
+
+  $("#user-nfts").append("Loading...");
   fetchNFTs();
 });
 
 async function fetchNFTs() {
-  let events = await instance.getPastEvents("Transfer", {
-    filter: {
-      to: user,
-    },
-    fromBlock: CREATION_BLOCK,
-    toBlock: "latest",
-  });
+  let tokens;
 
-  let totalOwned = 0;
+  if (userNFTs.length === 0) {
+    let events = await instance.getPastEvents("Transfer", {
+      filter: {
+        to: user,
+      },
+      fromBlock: CREATION_BLOCK,
+      toBlock: "latest",
+    });
 
-  let tokens = events.map((e) => e.returnValues.tokenId);
-  tokens = _.uniq(tokens);
+    let totalOwned = 0;
 
-  let tokenList = [];
+    tokens = events.map((e) => e.returnValues.tokenId);
+    tokens = _.uniq(tokens);
 
-  for (let i = 0; i < tokens.length; i++) {
-    const tokenId = tokens[i];
+    if (tokens.length === 0) {
+      alert("No tokens found!");
+    }
 
-    let _owner,
-      _level,
-      _timeUntilStarving,
-      _score,
-      _lastTimeMined,
-      _expectedReward;
+    for (let i = 0; i < tokens.length; i++) {
+      const tokenId = tokens[i];
 
-    try {
-      ({
-        _owner,
+      let _owner,
         _level,
         _timeUntilStarving,
         _score,
         _lastTimeMined,
-        _expectedReward,
-      } = await instance.methods.getVnftInfo(tokenId).call());
+        _expectedReward;
 
-      if (_owner == web3.utils.toChecksumAddress(user)) {
-        totalOwned++;
-        const currentTime = Date.now() / 1000;
-
-        const mineTime =
-          +_lastTimeMined + 24 * 60 * 60 < currentTime
-            ? "NOOOOWWW!!"
-            : new Date((+_lastTimeMined + 24 * 60 * 60) * 1000).toLocaleString(
-                "en-US"
-              );
-        const starvingTime =
-          +_timeUntilStarving < currentTime
-            ? "DEAD!!"
-            : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
-        const timeRemaining = Math.floor(+_timeUntilStarving - currentTime);
-
-        tokenList.push({
-          tokenId,
+      try {
+        ({
+          _owner,
           _level,
+          _timeUntilStarving,
           _score,
+          _lastTimeMined,
           _expectedReward,
-          starvingTime,
-          mineTime,
-          timeRemaining,
-        });
+        } = await instance.methods.getVnftInfo(tokenId).call());
+
+        if (_owner == web3.utils.toChecksumAddress(user)) {
+          totalOwned++;
+          const currentTime = Date.now() / 1000;
+
+          const mineTime =
+            +_lastTimeMined + 24 * 60 * 60 < currentTime
+              ? "NOOOOWWW!!"
+              : new Date(
+                  (+_lastTimeMined + 24 * 60 * 60) * 1000
+                ).toLocaleString("en-US");
+          const starvingTime =
+            +_timeUntilStarving < currentTime
+              ? "DEAD!!"
+              : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
+          const timeRemaining = Math.floor(+_timeUntilStarving - currentTime);
+
+          userNFTs.push({
+            tokenId,
+            _level,
+            _score,
+            _expectedReward,
+            starvingTime,
+            mineTime,
+            timeRemaining,
+          });
+        }
+      } catch (error) {
+        console.log(error.message);
       }
-    } catch (error) {
-      console.log(error.message);
     }
-  }
 
-  $("#user-nfts").empty();
+    $("#user-nfts").empty();
 
-  tokenList
-    .sort((a, b) => b._level - a._level)
-    .forEach((t) => {
-      const tableColor = t.timeRemaining < 3600 ? "table-danger" : "";
-      $("#user-nfts").append(`
+    userNFTs
+      .sort((a, b) => b._level - a._level)
+      .forEach((t) => {
+        const tableColor = t.timeRemaining < 3600 ? "table-danger" : "";
+        $("#user-nfts").append(`
         <tr class="${tableColor}">
             <th scope="row">${t.tokenId}</th>
             <td>${t._level}</td>
@@ -122,15 +132,13 @@ async function fetchNFTs() {
             }" target="_blank">check</a></td>
         </tr>
         `);
-    });
+      });
 
-  const totalRewards = tokenList
-    .map((t) => +fromWei(t._expectedReward))
-    .reduce((a, b) => a + b);
+    const totalRewards = userNFTs
+      .map((t) => +fromWei(t._expectedReward))
+      .reduce((a, b) => a + b);
 
-  console.log(totalRewards);
-
-  $("#user-nfts").append(`
+    $("#user-nfts").append(`
         <tr class="table-info">
             <th scope="row"></th>
             <td></td>
@@ -142,7 +150,8 @@ async function fetchNFTs() {
         </tr>
         `);
 
-  $("#total-nfts").html(`Total: ${totalOwned}`);
+    $("#total-nfts").html(`Total: ${totalOwned}`);
+  }
 }
 
 function getItemTime(id) {
@@ -163,131 +172,136 @@ function getItemTime(id) {
 }
 
 async function scanMarket() {
-  const currentBlock = await web3.eth.getBlockNumber();
-  const currentTime = Date.now() / 1000;
+  if (!scanned) {
+    $("#scan-nfts").html("Loading...");
 
-  const mintEvents = await instance.getPastEvents("Transfer", {
-    filter: {
-      from: ZERO_ADDRESS,
-    },
-    fromBlock: CREATION_BLOCK,
-    toBlock: "latest",
-  });
+    const currentBlock = await web3.eth.getBlockNumber();
+    const currentTime = Date.now() / 1000;
 
-  let consumeEvents = await instance.getPastEvents("VnftConsumed", {
-    fromBlock: CREATION_BLOCK,
-    toBlock: "latest",
-  });
+    const mintEvents = await instance.getPastEvents("Transfer", {
+      filter: {
+        from: ZERO_ADDRESS,
+      },
+      fromBlock: CREATION_BLOCK,
+      toBlock: "latest",
+    });
 
-  consumeEvents = consumeEvents.map((t) => {
-    return {
-      block: t.blockNumber,
-      txHash: t.transactionHash,
-      ...t.returnValues,
-    };
-  });
+    let consumeEvents = await instance.getPastEvents("VnftConsumed", {
+      fromBlock: CREATION_BLOCK,
+      toBlock: "latest",
+    });
 
-  consumeEvents = lastUniqBy("nftId")(consumeEvents);
+    consumeEvents = consumeEvents.map((t) => {
+      return {
+        block: t.blockNumber,
+        txHash: t.transactionHash,
+        ...t.returnValues,
+      };
+    });
 
-  const deadIds = [];
-  const soonIds = [];
+    consumeEvents = lastUniqBy("nftId")(consumeEvents);
 
-  for (let i = 0; i < mintEvents.length - 1; i++) {
-    const { tokenId } = mintEvents[i].returnValues;
+    const deadIds = [];
+    const soonIds = [];
 
-    const consumed = consumeEvents.filter((t) => t.nftId == tokenId)[0];
+    for (let i = 0; i < mintEvents.length - 1; i++) {
+      const { tokenId } = mintEvents[i].returnValues;
 
-    // If token has not consumed Items
-    if (!consumed) {
-      const mintTimeAprox =
-        (currentBlock - mintEvents[i].blockNumber) * BLOCK_TIME;
+      const consumed = consumeEvents.filter((t) => t.nftId == tokenId)[0];
 
-      // if it was minted more than 3 days ago
-      if (mintTimeAprox > 3 * ONE_DAY) deadIds.push(tokenId);
-    } else {
-      const timeExtended = getItemTime(consumed.itemId);
-      const aproxTimeAgo = (+currentBlock - consumed.block) * BLOCK_TIME;
+      // If token has not consumed Items
+      if (!consumed) {
+        const mintTimeAprox =
+          (currentBlock - mintEvents[i].blockNumber) * BLOCK_TIME;
 
-      if (aproxTimeAgo > timeExtended) deadIds.push(tokenId);
-      // This filters all other events, so we only query the blockchain
-      // for the "suspicious" ones
-      else if (aproxTimeAgo > timeExtended - MIN_TIME) {
-        try {
-          const {
-            _level,
-            _timeUntilStarving,
-            _score,
-            _expectedReward,
-          } = await instance.methods.getVnftInfo(tokenId).call();
-          console.log(
-            `Token ${tokenId} dying soon! ${new Date(
-              +_timeUntilStarving * 1000
-            )} (${Math.floor(+_timeUntilStarving - currentTime)} sec)`
-          );
+        // if it was minted more than 3 days ago
+        if (mintTimeAprox > 3 * ONE_DAY) deadIds.push(tokenId);
+      } else {
+        const timeExtended = getItemTime(consumed.itemId);
+        const aproxTimeAgo = (+currentBlock - consumed.block) * BLOCK_TIME;
 
-          const starvingTime =
-            +_timeUntilStarving < currentTime
-              ? "DEAD!!"
-              : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
+        if (aproxTimeAgo > timeExtended) deadIds.push(tokenId);
+        // This filters all other events, so we only query the blockchain
+        // for the "suspicious" ones
+        else if (aproxTimeAgo > timeExtended - MIN_TIME) {
+          try {
+            const {
+              _level,
+              _timeUntilStarving,
+              _score,
+              _expectedReward,
+            } = await instance.methods.getVnftInfo(tokenId).call();
+            console.log(
+              `Token ${tokenId} dying soon! ${new Date(
+                +_timeUntilStarving * 1000
+              )} (${Math.floor(+_timeUntilStarving - currentTime)} sec)`
+            );
 
-          soonIds.push({
-            tokenId,
-            _score,
-            _level,
-            _expectedReward,
-            starvingTime,
-            timeRemaining:
-              +_timeUntilStarving > currentTime
-                ? +_timeUntilStarving - currentTime
-                : 0,
-          });
-        } catch (error) {
-          console.log("Dead", tokenId);
+            const starvingTime =
+              +_timeUntilStarving < currentTime
+                ? "DEAD!!"
+                : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
+
+            soonIds.push({
+              tokenId,
+              _score,
+              _level,
+              _expectedReward,
+              starvingTime,
+              timeRemaining:
+                +_timeUntilStarving > currentTime
+                  ? +_timeUntilStarving - currentTime
+                  : 0,
+            });
+          } catch (error) {
+            console.log("Dead", tokenId);
+          }
         }
       }
     }
+
+    $("#market-info").append(`
+      <p>Minted: ${mintEvents.length}</p>
+      <p>Items consumed: ${consumeEvents.length}</p>
+      <p>vNFTs dying soon: ${soonIds.length}</p>
+      <p>vNFTs dead: ${deadIds.length}</p>
+    `);
+
+    $("#scan-nfts").empty();
+
+    soonIds
+      .sort((a, b) => a.timeRemaining - b.timeRemaining)
+      .forEach((t) => {
+        let tableColor = "";
+
+        if (t.timeRemaining < 3600) tableColor = "table-warning";
+        if (t._score > 1000) tableColor = "table-danger";
+
+        let link = `<td><a href="https://gallery.verynifty.io/nft/${t.tokenId}" target="_blank">check</a></td>`;
+
+        if (t.timeRemaining === 0)
+          link = `<td><a href="#" onclick="killNFT(${t.tokenId})">kill!</a></td>`;
+        $("#scan-nfts").append(`
+          <tr class="${tableColor}">
+              <th scope="row">${t.tokenId}</th>
+              <td>${t._level}</td>
+              <td>${t._score}</td>
+              <td>${t.starvingTime}</td>
+              ${link}
+          </tr>
+          `);
+      });
+
+    console.log("\n===Summary===\n");
+    console.log("Total tokens minted:", mintEvents.length);
+    console.log("Total items consumed:", consumeEvents.length);
+    console.log("Total NFTs dying soon:", soonIds.length);
+
+    scanned = true;
   }
-
-  $("#market-info").append(`
-    <p>Minted: ${mintEvents.length}</p>
-    <p>Items consumed: ${consumeEvents.length}</p>
-    <p>vNFTs dying soon: ${soonIds.length}</p>
-    <p>vNFTs dead: ${deadIds.length}</p>
-  `);
-
-  $("#scan-nfts").empty();
-
-  soonIds
-    .sort((a, b) => a.timeRemaining - b.timeRemaining)
-    .forEach((t) => {
-      let tableColor = "";
-
-      if (t.timeRemaining < 3600) tableColor = "table-warning";
-      if (t._score > 1000) tableColor = "table-danger";
-
-      let link = `<td><a href="https://gallery.verynifty.io/nft/${t.tokenId}" target="_blank">check</a></td>`;
-
-      if (t.timeRemaining === 0)
-        link = `<td><a href="#" onclick="killNFT(${t.tokenId})">kill!</a></td>`;
-      $("#scan-nfts").append(`
-        <tr class="${tableColor}">
-            <th scope="row">${t.tokenId}</th>
-            <td>${t._level}</td>
-            <td>${t._score}</td>
-            <td>${t.starvingTime}</td>
-            ${link}
-        </tr>
-        `);
-    });
-
-  console.log("\n===Summary===\n");
-  console.log("Total tokens minted:", mintEvents.length);
-  console.log("Total items consumed:", consumeEvents.length);
-  console.log("Total NFTs dying soon:", soonIds.length);
 }
 
 async function killNFT(id) {
-  console.log("killing", id);
   const recipientId = Number(
     prompt(
       "Please enter the ID of the token receiving the rewards",
@@ -295,11 +309,10 @@ async function killNFT(id) {
     )
   );
   try {
-    const { _alive } = await instance.methods.getVnftInfo(recipientId).call();
+    const reward = await instance.methods.getFatalityReward(recipientId).call();
 
-    if (_alive === false)
-      await instance.methods.fatality(id, recipientId).send({});
-    else alert("Error: vNFT is not dead");
+    if (reward > 0) await instance.methods.fatality(id, recipientId).send({});
+    else alert("Error: vNFT is not dead or not enough score");
   } catch (error) {
     console.log(error.message);
   }
@@ -329,7 +342,6 @@ $("#scannerLink").click(() => {
   $("#scanner-container").show();
 
   scanMarket();
-  $("#scan-nfts").append("Loading...");
 });
 
 $("#homeLink").click(() => {
