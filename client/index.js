@@ -231,11 +231,6 @@ async function scanMarket() {
               _score,
               _expectedReward,
             } = await instance.methods.getVnftInfo(tokenId).call();
-            console.log(
-              `Token ${tokenId} dying soon! ${new Date(
-                +_timeUntilStarving * 1000
-              )} (${Math.floor(+_timeUntilStarving - currentTime)} sec)`
-            );
 
             const starvingTime =
               +_timeUntilStarving < currentTime
@@ -291,11 +286,6 @@ async function scanMarket() {
           </tr>
           `);
       });
-
-    console.log("\n===Summary===\n");
-    console.log("Total tokens minted:", mintEvents.length);
-    console.log("Total items consumed:", consumeEvents.length);
-    console.log("Total NFTs dying soon:", soonIds.length);
 
     scanned = true;
   }

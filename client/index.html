@@ -15,9 +15,6 @@
       href="https://gblobscdn.gitbook.com/spaces%2F-MJRuUJrHmZKG5AEvvQX%2Favatar-1602509969956.png?alt=media"
     />
 
-    <!-- Own CSS -->
-    <!-- <link rel="stylesheet" href="style.css" /> -->
-
     <title>VeryNifty Tools</title>
   </head>
   <body>
@@ -56,20 +53,22 @@
         <div class="card-body">
           <h5 class="card-title font-weight-bold">My vNFTs</h5>
           <p id="total-nfts"></p>
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th scope="col">ID</th>
-                <th scope="col">Level</th>
-                <th scope="col">Score</th>
-                <th scope="col">Death Time</th>
-                <th scope="col">Mine Time</th>
-                <th scope="col">MUSE/day</th>
-                <th scope="col"></th>
-              </tr>
-            </thead>
-            <tbody id="user-nfts"></tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Level</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">Death Time</th>
+                  <th scope="col">Mine Time</th>
+                  <th scope="col">MUSE/day</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody id="user-nfts"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -131,6 +130,19 @@
         </div> -->
       </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="page-footer font-small blue">
+      <div class="footer-copyright text-center py-3">
+        ETH/ERC20 Donations:
+        <a
+          href="https://etherscan.io/address/0xea5110dde385f0632f85d9cc0381a8f2b6b3c5e6"
+        >
+          0xEA5110dDE385f0632F85D9cC0381A8f2B6b3C5e6</a
+        >
+      </div>
+    </footer>
+    <!-- Footer -->
 
     <!-- External scripts -->
     <script
