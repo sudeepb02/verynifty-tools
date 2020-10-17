@@ -10,7 +10,7 @@ const MIN_TIME = 6 * 60 * 60; // 6 hours
 const BLOCK_TIME = 13;
 let userNFTs = [];
 let scanned = false;
-let totalEvents = 0;
+let eventCounter = 0;
 
 //Executed when page finish loading
 $(document).ready(async () => {
@@ -35,7 +35,6 @@ $(document).ready(async () => {
 
   //Create vNFT instance
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
-
   setUserAcc();
 
   $("#user-nfts").append("Loading...");
@@ -320,10 +319,10 @@ async function killNFT(id) {
 }
 
 function renderEvent(event, txHash) {
-  totalEvents++;
+  eventCounter++;
   return $("#events-nfts").append(`
     <tr>
-      <th scope="row">${totalEvents}</th>
+      <th scope="row">${eventCounter}</th>
       <td>${event}</td>
       <td><a href="https://etherscan.io/tx/${txHash}" target="_blank">check</a></td>
     </tr>
@@ -331,7 +330,7 @@ function renderEvent(event, txHash) {
 }
 
 async function checkEvents() {
-  totalEvents = 0;
+  eventCounter = 0;
   const block = await web3.eth.getBlockNumber();
   $("#events-nfts").empty();
 
@@ -342,7 +341,6 @@ async function checkEvents() {
     fromBlock: block - 1000,
     toBlock: "latest",
   });
-  console.log(mintEvents[0]);
   mintEvents = mintEvents.map((e) => {
     return { name: "Minted", txHash: e.transactionHash, block: e.blockNumber };
   });
