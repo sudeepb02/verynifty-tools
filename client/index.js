@@ -25,14 +25,14 @@ $(document).ready(async () => {
 
   ethereum.on("accountsChanged", (_accounts) => {
     console.log("Account Changed!", accounts[0]);
-    user = _accounts[0];
+    user = web3.utils.toChecksumAddress(_accounts[0]);
     setUserAcc();
     userNFTs = [];
     fetchNFTs();
   });
 
   // User will be the first item in the accounts array
-  user = accounts[0];
+  user = web3.utils.toChecksumAddress(accounts[0]);
 
   //Create vNFT instance
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
@@ -94,13 +94,13 @@ async function fetchNFTs() {
 
           const mineTime =
             +_lastTimeMined + 24 * 60 * 60 < currentTime
-              ? "NOOOOWWW!!"
+              ? 0
               : new Date(
                   (+_lastTimeMined + 24 * 60 * 60) * 1000
                 ).toLocaleString("en-US");
           const starvingTime =
             +_timeUntilStarving < currentTime
-              ? "DEAD!!"
+              ? 0
               : new Date(+_timeUntilStarving * 1000).toLocaleString("en-US");
           const timeRemaining = Math.floor(+_timeUntilStarving - currentTime);
 
@@ -124,14 +124,17 @@ async function fetchNFTs() {
     userNFTs
       .sort((a, b) => b._level - a._level)
       .forEach((t) => {
-        const tableColor = t.timeRemaining < 3600 ? "table-danger" : "";
+        let tableColor = "";
+
+        if (t.mineTime < 3600) tableColor = "table-warning";
+        if (t.timeRemaining < 3600) tableColor = "table-danger";
         $("#user-nfts").append(`
         <tr class="${tableColor}">
             <th scope="row">${t.tokenId}</th>
             <td>${t._level}</td>
             <td>${t._score}</td>
-            <td>${t.starvingTime}</td>
-            <td>${t.mineTime}</td>
+            <td>${t.starvingTime ? t.starvingTime : "DEAD!!"}</td>
+            <td>${t.mineTime ? t.mineTime : "MINE NOW!"}</td>
             <td>${Number(fromWei(t._expectedReward)).toFixed(2)}</td>
             <td><a href="https://gallery.verynifty.io/nft/${
               t.tokenId
@@ -495,6 +498,24 @@ function refreshScanner() {
   $("#market-info").empty();
 
   scanMarket();
+}
+
+async function addCareTaker(tokenId) {
+  try {
+    const tokenId = Number(
+      prompt("Please enter the token ID to add care taker")
+    );
+    const newCareTaker = prompt("Please enter the new care taker address");
+
+    const owner = await instance.methods.ownerOf(tokenId).call();
+
+    if (owner === user && user !== web3.utils.toChecksumAddress(newCareTaker)) {
+      await instance.methods.addCareTaker(tokenId, newCareTaker).send();
+      alert(`Care Taker Added!: ${newCareTaker}`);
+    } else alert("Can't add care taker for given token id");
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
 // NAVIGATION
