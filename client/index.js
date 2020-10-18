@@ -325,7 +325,7 @@ async function killNFT(id) {
     const reward = await instance.methods.getFatalityReward(id).call();
 
     if (reward > 0) {
-      alert(`Expected Reward: ${reward} points`);
+      alert(`Expected Reward: ${reward} points. Recipient: ${recipientId}`);
       await instance.methods.fatality(id, recipientId).send({});
     } else alert("Error: vNFT is not dead or not enough score");
   } catch (error) {
