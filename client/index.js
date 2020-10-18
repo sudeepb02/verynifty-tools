@@ -171,6 +171,23 @@ function getItemTime(id) {
   }
 }
 
+function getItemScore(id) {
+  switch (parseInt(id)) {
+    case 1:
+      return 100;
+    case 2:
+      return 190;
+    case 3:
+      return 1;
+    case 4:
+      return 444;
+    case 5:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 async function scanMarket() {
   if (!scanned) {
     $("#scan-nfts").html("Loading...");
@@ -315,6 +332,75 @@ async function scanMarket() {
   }
 }
 
+async function fetchLeaders() {
+  $("#leaders-nfts").html("Loading...");
+
+  let allTokens = await instance.getPastEvents("Transfer", {
+    filter: {
+      from: ZERO_ADDRESS,
+    },
+    fromBlock: CREATION_BLOCK,
+    toBlock: "latest",
+  });
+
+  const fatalityEvents = await instance.getPastEvents("VnftFatalized", {
+    fromBlock: CREATION_BLOCK,
+    toBlock: "latest",
+  });
+  const fatalityIds = fatalityEvents.map((e) => e.returnValues.nftId);
+
+  // Filter Dead
+  allTokens = allTokens.filter(
+    (t) => !fatalityIds.includes(t.returnValues.tokenId)
+  );
+
+  const consumeEvents = await instance.getPastEvents("VnftConsumed", {
+    fromBlock: CREATION_BLOCK,
+    toBlock: "latest",
+  });
+
+  $("#leaders-nfts").empty();
+
+  let leaders = [];
+
+  for (let i = 0; i < allTokens.length - 1; i++) {
+    const { tokenId } = allTokens[i].returnValues;
+
+    let score = 0;
+
+    consumeEvents
+      .filter((t) => t.returnValues.nftId == tokenId)
+      .forEach((consumed) => {
+        score += getItemScore(consumed.returnValues.itemId);
+      });
+
+    const level =
+      score <= 100 ? 1 : Math.floor(Math.sqrt(Math.floor(score / 100) * 2)) * 2;
+
+    leaders.push({
+      tokenId,
+      score,
+      level,
+    });
+  }
+
+  leaders
+    .sort((a, b) => b.score - a.score)
+    .forEach((t, key) => {
+      $("#leaders-nfts").append(`
+          <tr >
+              <th scope="row">${key + 1}</th>
+              <td>${t.tokenId}</td>
+              <td>${t.level}</td>
+              <td>${t.score}</td>
+              <td><a href="https://gallery.verynifty.io/nft/${
+                t.tokenId
+              }" target="_blank">check</a></td>
+          </tr>
+          `);
+    });
+}
+
 async function killNFT(id) {
   const recipientId = Number(
     prompt(
@@ -405,8 +491,8 @@ function refreshScanner() {
 // NAVIGATION
 
 $("#eventsLink").click(() => {
-  $("#scanner-container, #nft-container").hide();
-  $("#scannerLink, #homeLink").removeClass("active");
+  $("#scanner-container, #nft-container, #leaders-container").hide();
+  $("#scannerLink, #homeLink, #leadersLink").removeClass("active");
 
   $("#eventsLink").addClass("active");
   $("#events-container").show();
@@ -414,9 +500,19 @@ $("#eventsLink").click(() => {
   checkEvents();
 });
 
+$("#leadersLink").click(() => {
+  $("#nft-container, #events-container, #scanner-container").hide();
+  $("#homeLink, #eventsLink, #scannerLink").removeClass("active");
+
+  $("#leadersLink").addClass("active");
+  $("#leaders-container").show();
+
+  fetchLeaders();
+});
+
 $("#scannerLink").click(() => {
-  $("#nft-container, #events-container").hide();
-  $("#homeLink, #eventsLink").removeClass("active");
+  $("#nft-container, #events-container,#leaders-container").hide();
+  $("#homeLink, #eventsLink, #leadersLink").removeClass("active");
 
   $("#scannerLink").addClass("active");
   $("#scanner-container").show();
@@ -425,8 +521,8 @@ $("#scannerLink").click(() => {
 });
 
 $("#homeLink").click(() => {
-  $("#scanner-container, #events-container").hide();
-  $("#scannerLink, #eventsLink").removeClass("active");
+  $("#scanner-container, #events-container, #leaders-container").hide();
+  $("#scannerLink, #eventsLink, #leadersLink").removeClass("active");
 
   $("#homeLink").addClass("active");
   $("#nft-container").show();

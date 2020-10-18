@@ -64,6 +64,7 @@
         <div class="navbar-nav mr-auto">
           <a class="nav-link active" href="#" id="homeLink">My vNFTs </a>
           <a class="nav-link" href="#" id="scannerLink">Scanner</a>
+          <a class="nav-link" href="#" id="leadersLink">Leaderboard</a>
           <a class="nav-link" href="#" id="eventsLink">Events</a>
         </div>
 
@@ -135,6 +136,35 @@
           <div class="card-body">
             <h5 class="card-title font-weight-bold">Game Stats</h5>
             <div id="market-info"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard View -->
+    <div
+      id="leaders-container"
+      class="container mt-5 mb-3"
+      style="display: none"
+    >
+      <div class="row justify-content-between">
+        <div class="col-12 col-md-8 card">
+          <div class="card-body">
+            <h5 class="card-title font-weight-bold">Top vNFTs</h5>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Score</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="leaders-nfts"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
