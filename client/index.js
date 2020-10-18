@@ -191,6 +191,12 @@ async function scanMarket() {
       toBlock: "latest",
     });
 
+    const fatalityEvents = await instance.getPastEvents("VnftFatalized", {
+      fromBlock: CREATION_BLOCK,
+      toBlock: "latest",
+    });
+    const fatalityIds = fatalityEvents.map((e) => e.returnValues.nftId);
+
     consumeEvents = consumeEvents.map((t) => {
       return {
         block: t.blockNumber,
@@ -203,6 +209,9 @@ async function scanMarket() {
 
     const deadIds = [];
     const soonIds = [];
+    let toKill = 0;
+
+    $("#scan-nfts").empty();
 
     for (let i = 0; i < mintEvents.length - 1; i++) {
       const { tokenId } = mintEvents[i].returnValues;
@@ -220,7 +229,22 @@ async function scanMarket() {
         const timeExtended = getItemTime(consumed.itemId);
         const aproxTimeAgo = (+currentBlock - consumed.block) * BLOCK_TIME;
 
-        if (aproxTimeAgo > timeExtended) deadIds.push(tokenId);
+        if (aproxTimeAgo >= timeExtended) {
+          deadIds.push(tokenId);
+          // Check if it hasnt been fatalized yet
+          if (!fatalityIds.includes(tokenId)) {
+            toKill++;
+            $("#scan-nfts").append(`
+              <tr class="table-danger">
+                  <th scope="row">${tokenId}</th>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td><a href="#" onclick="killNFT(${tokenId})">kill!</a></td>
+              </tr>
+          `);
+          }
+        }
         // This filters all other events, so we only query the blockchain
         // for the "suspicious" ones
         else if (aproxTimeAgo > timeExtended - MIN_TIME) {
@@ -259,10 +283,9 @@ async function scanMarket() {
       <p>Minted: ${mintEvents.length}</p>
       <p>Items consumed: ${consumeEvents.length}</p>
       <p>vNFTs dying soon: ${soonIds.length}</p>
+      <p>vNFTs ready to die: ${toKill}</p>
       <p>vNFTs dead: ${deadIds.length}</p>
     `);
-
-    $("#scan-nfts").empty();
 
     soonIds
       .sort((a, b) => a.timeRemaining - b.timeRemaining)
@@ -299,10 +322,12 @@ async function killNFT(id) {
     )
   );
   try {
-    const reward = await instance.methods.getFatalityReward(recipientId).call();
+    const reward = await instance.methods.getFatalityReward(id).call();
 
-    if (reward > 0) await instance.methods.fatality(id, recipientId).send({});
-    else alert("Error: vNFT is not dead or not enough score");
+    if (reward > 0) {
+      alert(`Expected Reward: ${reward} points`);
+      await instance.methods.fatality(id, recipientId).send({});
+    } else alert("Error: vNFT is not dead or not enough score");
   } catch (error) {
     console.log(error.message);
   }
