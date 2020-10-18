@@ -1,6 +1,7 @@
 // Global Variables
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
-let user, instance, web3, toWei, fromWei;
+const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
+let user, instance, muse, web3, toWei, fromWei;
 const { flow, partialRight: pr, keyBy, values } = _;
 const lastUniqBy = (iteratee) => flow(pr(keyBy, iteratee), values);
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -35,11 +36,16 @@ $(document).ready(async () => {
 
   //Create vNFT instance
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
+  muse = new web3.eth.Contract(erc20Abi, tokenAddress, { from: user });
   setUserAcc();
 
   $("#user-nfts").append("Loading...");
   fetchNFTs();
 });
+
+function formatNumber(num) {
+  return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+}
 
 async function fetchNFTs() {
   let tokens;
@@ -295,8 +301,11 @@ async function scanMarket() {
       }
     }
 
+    const museSupply = await muse.methods.totalSupply().call();
+
     $("#market-info").append(`
-      <p>Total Minted: ${mintEvents.length}</p>
+      <p>Total vNFTs Minted: ${mintEvents.length}</p>
+      <p>MUSE Supply: ${formatNumber(Math.floor(fromWei(museSupply)))}</p>
       <p>Items consumed: ${totalConsumeEvents.length}</p>
       <p>Total Dead: ${fatalityEvents.length}</p>
       <p>Dying soon: ${soonIds.length}</p>
