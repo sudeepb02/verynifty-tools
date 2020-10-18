@@ -15,6 +15,34 @@
       href="https://gblobscdn.gitbook.com/spaces%2F-MJRuUJrHmZKG5AEvvQX%2Favatar-1602509969956.png?alt=media"
     />
 
+    <style>
+      table {
+        font-size: 0.8rem;
+      } /*1rem = 16px*/
+
+      footer {
+        font-size: 0.7rem;
+      } /*1rem = 16px*/
+
+      /* Medium devices (tablets, 768px and up) The navbar toggle appears at this breakpoint */
+      @media (min-width: 768px) {
+        table {
+          font-size: 0.9rem;
+        }
+
+        footer {
+          font-size: 1rem;
+        } /*1rem = 16px*/
+      }
+
+      /* Extra large devices (large desktops, 1200px and up) */
+      @media (min-width: 1200px) {
+        table {
+          font-size: 1rem;
+        } /*1rem = 16px*/
+      }
+    </style>
+
     <title>VeryNifty Tools</title>
   </head>
   <body>
@@ -48,54 +76,64 @@
     </nav>
 
     <!-- User vNFTs View -->
-    <div id="nft-container" class="container m-5">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title font-weight-bold">My vNFTs</h5>
-          <p id="total-nfts"></p>
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Level</th>
-                  <th scope="col">Score</th>
-                  <th scope="col">Death Time</th>
-                  <th scope="col">Mine Time</th>
-                  <th scope="col">MUSE/day</th>
-                  <th scope="col"></th>
-                </tr>
-              </thead>
-              <tbody id="user-nfts"></tbody>
-            </table>
+    <div id="nft-container" class="container mt-5 mb-3">
+      <div class="row">
+        <div class="col-12 col-md-11 card">
+          <div class="card-body">
+            <h5 class="card-title font-weight-bold">My vNFTs</h5>
+            <p id="total-nfts"></p>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Death Time</th>
+                    <th scope="col">Mine Time</th>
+                    <th scope="col">MUSE/day</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="user-nfts"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Scanner View -->
-    <div id="scanner-container" class="container m-5" style="display: none">
+    <div
+      id="scanner-container"
+      class="container mt-5 mb-3"
+      style="display: none"
+    >
       <div class="row justify-content-between">
-        <div class="col-8 card">
+        <div class="col-12 col-md-8 order-1 order-md-0 card">
           <div class="card-body">
             <h5 class="card-title font-weight-bold">Market Scanner</h5>
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Level</th>
-                  <th scope="col">Score</th>
-                  <th scope="col">Death Time</th>
-                  <th scope="col"></th>
-                </tr>
-              </thead>
-              <tbody id="scan-nfts"></tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Death Time</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="scan-nfts"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div class="col-3 card align-self-start">
+        <div
+          class="col-12 col-md-3 order-0 order-md-1 card align-self-start mb-3"
+        >
           <div class="card-body">
-            <h5 class="card-title font-weight-bold">Stats</h5>
+            <h5 class="card-title font-weight-bold">Game Stats</h5>
             <div id="market-info"></div>
           </div>
         </div>
@@ -103,31 +141,31 @@
     </div>
 
     <!-- Events View -->
-    <div id="events-container" class="container m-5" style="display: none">
+    <div
+      id="events-container"
+      class="container mt-5 mb-3"
+      style="display: none"
+    >
       <div class="row justify-content-between">
-        <div class="col-8 card">
+        <div class="col-12 col-md-8 card">
           <div class="card-body">
             <h5 class="card-title font-weight-bold">
               Latest Activity ( &lt;1000 blocks)
             </h5>
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Event</th>
-                  <th scope="col">TxHash</th>
-                </tr>
-              </thead>
-              <tbody id="events-nfts"></tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Event</th>
+                    <th scope="col">TxHash</th>
+                  </tr>
+                </thead>
+                <tbody id="events-nfts"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <!-- <div class="col-3 card align-self-start">
-          <div class="card-body">
-            <h5 class="card-title font-weight-bold">Stats</h5>
-            <div id="event-info"></div>
-          </div>
-        </div> -->
       </div>
     </div>
 

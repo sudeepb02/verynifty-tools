@@ -186,7 +186,7 @@ async function scanMarket() {
       toBlock: "latest",
     });
 
-    let consumeEvents = await instance.getPastEvents("VnftConsumed", {
+    const totalConsumeEvents = await instance.getPastEvents("VnftConsumed", {
       fromBlock: CREATION_BLOCK,
       toBlock: "latest",
     });
@@ -197,7 +197,7 @@ async function scanMarket() {
     });
     const fatalityIds = fatalityEvents.map((e) => e.returnValues.nftId);
 
-    consumeEvents = consumeEvents.map((t) => {
+    let consumeEvents = totalConsumeEvents.map((t) => {
       return {
         block: t.blockNumber,
         txHash: t.transactionHash,
@@ -206,12 +206,11 @@ async function scanMarket() {
     });
 
     consumeEvents = lastUniqBy("nftId")(consumeEvents);
-
-    const deadIds = [];
     const soonIds = [];
     let toKill = 0;
 
     $("#scan-nfts").empty();
+    $("#market-info").empty();
 
     for (let i = 0; i < mintEvents.length - 1; i++) {
       const { tokenId } = mintEvents[i].returnValues;
@@ -219,38 +218,33 @@ async function scanMarket() {
       const consumed = consumeEvents.filter((t) => t.nftId == tokenId)[0];
 
       // If token has not consumed Items
-      if (!consumed) {
-        const mintTimeAprox =
-          (currentBlock - mintEvents[i].blockNumber) * BLOCK_TIME;
-
-        // if it was minted more than 3 days ago
-        if (mintTimeAprox > 3 * ONE_DAY) deadIds.push(tokenId);
-      } else {
+      if (consumed) {
         const timeExtended = getItemTime(consumed.itemId);
         const aproxTimeAgo = (+currentBlock - consumed.block) * BLOCK_TIME;
 
         if (aproxTimeAgo >= timeExtended) {
           // Check if it hasnt been fatalized yet
           if (!fatalityIds.includes(tokenId)) {
-            toKill++;
             try {
               const { _level, _score } = await instance.methods
                 .getVnftInfo(tokenId)
                 .call();
-              if (_score > 100)
+              if (_score > 1) {
+                toKill++;
                 $("#scan-nfts").append(`
-                    <tr class="table-danger">
-                        <th scope="row">${tokenId}</th>
-                        <td>${_level}</td>
-                        <td>${_score}</td>
-                        <td>NOW!</td>
-                        <td><a href="#" onclick="killNFT(${tokenId})">kill!</a></td>
+                    <tr>
+                      <th scope="row">${tokenId}</th>
+                      <td>${_level}</td>
+                      <td>${_score}</td>
+                      <td>NOW!</td>
+                      <td><button class="btn btn-outline-danger btn-sm" onclick="killNFT(${tokenId})">KILL</button></td>
                     </tr>
                 `);
+              }
             } catch (error) {
               console.log(error.message);
             }
-          } else deadIds.push(tokenId);
+          }
         }
         // This filters all other events, so we only query the blockchain
         // for the "suspicious" ones
@@ -285,11 +279,13 @@ async function scanMarket() {
     }
 
     $("#market-info").append(`
-      <p>Minted: ${mintEvents.length}</p>
-      <p>Items consumed: ${consumeEvents.length}</p>
-      <p>vNFTs dying soon: ${soonIds.length}</p>
-      <p>vNFTs ready to die: ${toKill}</p>
-      <p>vNFTs dead: ${deadIds.length}</p>
+      <p>Total Minted: ${mintEvents.length}</p>
+      <p>Items consumed: ${totalConsumeEvents.length}</p>
+      <p>Total Dead: ${fatalityEvents.length}</p>
+      <p>Dying soon: ${soonIds.length}</p>
+      <p>Available to Kill: ${toKill}</p>
+      <br/>
+      <button class="btn btn-outline-dark" onclick="refreshScanner()">REFRESH</button>
     `);
 
     soonIds
@@ -332,7 +328,7 @@ async function killNFT(id) {
     if (reward > 0) {
       alert(`Expected Reward: ${reward} points. Recipient: ${recipientId}`);
       await instance.methods.fatality(id, recipientId).send({});
-    } else alert("Error: vNFT is not dead or not enough score");
+    } else alert("Error: vNFT is not dead or not enough rewards");
   } catch (error) {
     console.log(error.message);
   }
@@ -398,6 +394,14 @@ function setUserAcc() {
     .attr("href", `https://etherscan.io/address/${user}`);
 }
 
+function refreshScanner() {
+  scanned = false;
+  $("#scan-nfts").empty();
+  $("#market-info").empty();
+
+  scanMarket();
+}
+
 // NAVIGATION
 
 $("#eventsLink").click(() => {
@@ -426,4 +430,8 @@ $("#homeLink").click(() => {
 
   $("#homeLink").addClass("active");
   $("#nft-container").show();
+});
+
+$(".navbar-nav>a").click(function () {
+  $(".navbar-collapse").collapse("hide");
 });
