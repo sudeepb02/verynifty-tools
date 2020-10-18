@@ -230,20 +230,27 @@ async function scanMarket() {
         const aproxTimeAgo = (+currentBlock - consumed.block) * BLOCK_TIME;
 
         if (aproxTimeAgo >= timeExtended) {
-          deadIds.push(tokenId);
           // Check if it hasnt been fatalized yet
           if (!fatalityIds.includes(tokenId)) {
             toKill++;
-            $("#scan-nfts").append(`
-              <tr class="table-danger">
-                  <th scope="row">${tokenId}</th>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td><a href="#" onclick="killNFT(${tokenId})">kill!</a></td>
-              </tr>
-          `);
-          }
+            try {
+              const { _level, _score } = await instance.methods
+                .getVnftInfo(tokenId)
+                .call();
+              if (_score > 100)
+                $("#scan-nfts").append(`
+                    <tr class="table-danger">
+                        <th scope="row">${tokenId}</th>
+                        <td>${_level}</td>
+                        <td>${_score}</td>
+                        <td>NOW!</td>
+                        <td><a href="#" onclick="killNFT(${tokenId})">kill!</a></td>
+                    </tr>
+                `);
+            } catch (error) {
+              console.log(error.message);
+            }
+          } else deadIds.push(tokenId);
         }
         // This filters all other events, so we only query the blockchain
         // for the "suspicious" ones
@@ -253,7 +260,6 @@ async function scanMarket() {
               _level,
               _timeUntilStarving,
               _score,
-              _expectedReward,
             } = await instance.methods.getVnftInfo(tokenId).call();
 
             const starvingTime =
@@ -265,7 +271,6 @@ async function scanMarket() {
               tokenId,
               _score,
               _level,
-              _expectedReward,
               starvingTime,
               timeRemaining:
                 +_timeUntilStarving > currentTime
