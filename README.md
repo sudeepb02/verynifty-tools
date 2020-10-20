@@ -1,6 +1,6 @@
 # Very Nifty Tools
 
-Helper tools for [Very Nifty DApp](https://gallery.verynifty.io/)
+Check our live app [here](https://very-nifty-tools.netlify.app/). Do note that you use this utility at your own risk!!! 
 
 ## Testing
 
