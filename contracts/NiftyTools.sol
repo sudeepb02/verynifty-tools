@@ -26,10 +26,11 @@ interface IVNFT {
 contract NiftyTools is Ownable {
     using SafeMath for uint256;
 
-    IVNFT vnft;
-    IERC20 muse;
-    uint256 maxIds = 20;
-    uint256 fee;
+    IVNFT public vnft;
+    IERC20 public muse;
+    uint256 public maxIds = 20;
+    uint256 public fee;
+    bool paused;
 
     constructor(
         IVNFT _vnft,
@@ -41,23 +42,16 @@ contract NiftyTools is Ownable {
         fee = _fee;
     }
 
-    function setVNFT(IVNFT _vnft) public onlyOwner {
-        vnft = _vnft;
-    }
-
-    function setMaxIds(uint256 _maxIds) public onlyOwner {
-        maxIds = _maxIds;
-    }
-
-    function setFee(uint256 _fee) public onlyOwner {
-        fee = _fee;
+    modifier notPaused() {
+        require(!paused, "PAUSED");
+        _;
     }
 
     /**
         @notice claim MUSE tokens from multiple vNFTs
         @dev contract should be whitelisted as caretaker beforehand
      */
-    function claimMultiple(uint256[] memory ids) external {
+    function claimMultiple(uint256[] memory ids) external notPaused {
         require(ids.length <= maxIds, "LENGTH");
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -65,15 +59,15 @@ contract NiftyTools is Ownable {
         }
 
         // Charge fees
-        uint256 museFee = muse.balanceOf(address(this)).sub(fee);
-        require(muse.transfer(owner(), museFee));
+        require(muse.transfer(owner(), fee));
 
         // Send rest to user
         require(muse.transfer(msg.sender, muse.balanceOf(address(this))));
     }
 
     function _checkAmount(uint256[] memory _itemIds)
-        internal
+        public
+        view
         returns (uint256 totalAmt)
     {
         for (uint256 i = 0; i < _itemIds.length; i++) {
@@ -88,6 +82,7 @@ contract NiftyTools is Ownable {
      */
     function feedMultiple(uint256[] memory ids, uint256[] memory itemIds)
         external
+        notPaused
     {
         require(ids.length <= maxIds, "Too many ids");
         uint256 museCost = _checkAmount(itemIds);
@@ -97,8 +92,24 @@ contract NiftyTools is Ownable {
         );
         require(muse.transferFrom(msg.sender, owner(), fee), "MUSE:fee");
 
+        require(muse.approve(address(vnft), museCost), "MUSE:approve");
+
         for (uint256 i = 0; i < ids.length; i++) {
             vnft.buyAccesory(ids[i], itemIds[i]);
         }
+    }
+
+    // OWNER FUNCTIONS
+
+    function setVNFT(IVNFT _vnft) public onlyOwner {
+        vnft = _vnft;
+    }
+
+    function setMaxIds(uint256 _maxIds) public onlyOwner {
+        maxIds = _maxIds;
+    }
+
+    function setFee(uint256 _fee) public onlyOwner {
+        fee = _fee;
     }
 }
