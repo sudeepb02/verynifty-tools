@@ -662,11 +662,11 @@ $("#confirmBtn").click(async () => {
 $("#feedBtn").click(() => {
   const options = `
     <option selected value="0">None</option>
-    <option value="1" data-toggle="tooltip" data-placement="right" title="MUSE: 5, TOD:3, SCORE:100 ">Gem #1</option>
-    <option value="2" data-toggle="tooltip" data-placement="right" title="MUSE: 6, TOD:2, SCORE:190 ">Gem #2</option>
-    <option value="3" data-toggle="tooltip" data-placement="right" title="MUSE: 3, TOD:4, SCORE:1 ">Gem #3</option>
-    <option value="4" data-toggle="tooltip" data-placement="right" title="MUSE: 13, TOD:1, SCORE:444 ">Gem #4</option>
-    <option value="5" data-toggle="tooltip" data-placement="right" title="MUSE: 12, TOD:7, SCORE:1 ">Gem #5</option>
+    <option value="1" data-toggle="tooltip" data-placement="left" title="MUSE: 5, TOD:3, SCORE:100 ">Gem #1</option>
+    <option value="2" data-toggle="tooltip" data-placement="left" title="MUSE: 6, TOD:2, SCORE:190 ">Gem #2</option>
+    <option value="3" data-toggle="tooltip" data-placement="left" title="MUSE: 3, TOD:4, SCORE:1 ">Gem #3</option>
+    <option value="4" data-toggle="tooltip" data-placement="left" title="MUSE: 13, TOD:1, SCORE:444 ">Gem #4</option>
+    <option value="5" data-toggle="tooltip" data-placement="left" title="MUSE: 12, TOD:7, SCORE:1 ">Gem #5</option>
   `;
 
   for (let i = 0; i < userNFTs.length; i++) {
