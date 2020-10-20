@@ -20,6 +20,17 @@ module.exports = {
       gasPrice: 20e9,
       gas: 5e5,
     },
+    remote: {
+      provider() {
+        return new HDWalletProvider(
+          process.env.MNEMONICS,
+          process.env.NODE_URL,
+          0,
+          2
+        );
+      },
+      network_id: 666,
+    },
   },
   compilers: {
     solc: {

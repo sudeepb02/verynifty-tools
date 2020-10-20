@@ -6,6 +6,7 @@
     "test": "test"
   },
   "scripts": {
+    "deploy": "truffle migrate --reset --network remote",
     "kill": "node scripts/kill",
     "soon": "node scripts/soon",
     "myNFTs": "node scripts/myNFTs"
