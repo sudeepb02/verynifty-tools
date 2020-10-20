@@ -2,6 +2,7 @@
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
 const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
 const toolsAddress = "0xc61A74d848CF2f0dCCf6c5a19ae2B2E6D7c6B530";
+const uniswapPairAddress = "0x20d2C17d1928EF4290BF17F922a10eAa2770BF43";
 let user, instance, muse, tools, web3, toWei, fromWei;
 const { flow, partialRight: pr, keyBy, values } = _;
 const lastUniqBy = (iteratee) => flow(pr(keyBy, iteratee), values);
@@ -40,6 +41,8 @@ $(document).ready(async () => {
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
   muse = new web3.eth.Contract(erc20Abi, tokenAddress, { from: user });
   tools = new web3.eth.Contract(toolsAbi, toolsAddress, { from: user });
+  pair = new web3.eth.Contract(uniswapAbi, uniswapPairAddress);
+  getMusePrice();
   setUserAcc();
 
   $("#user-nfts").append("Loading...");
@@ -48,6 +51,15 @@ $(document).ready(async () => {
 
 function formatNumber(num) {
   return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+}
+
+async function getMusePrice() {
+  const { _reserve0, _reserve1 } = await pair.methods.getReserves().call();
+
+  const numerator = 0.997 * fromWei(_reserve1);
+  const denominator = +fromWei(_reserve0) + 0.997;
+
+  return Number(numerator / denominator).toFixed(5);
 }
 
 async function fetchNFTs() {
@@ -72,7 +84,10 @@ async function fetchNFTs() {
     }
 
     const balance = await muse.methods.balanceOf(user).call();
-    $("#muse-balance").html(`MUSE Balance: ${fromWei(balance)}`);
+    const price = await getMusePrice();
+    $("#muse-balance").html(
+      `MUSE Balance: ${fromWei(balance)} (1 MUSE = ${price} ETH )`
+    );
 
     for (let i = 0; i < tokens.length; i++) {
       const tokenId = tokens[i];
