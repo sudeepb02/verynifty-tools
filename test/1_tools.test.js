@@ -3,9 +3,10 @@ const MuseToken = artifacts.require("MuseToken");
 const VNFT = artifacts.require("VNFT");
 
 const { expectRevert } = require("@openzeppelin/test-helpers");
+
 require("./utils");
 
-const MUSE_FEE = String(3e18); //  3 MUSE per service
+const MUSE_FEE = 5000; //  5% MUSE per service
 const toWei = (amount) => web3.utils.toWei(String(amount));
 const fromWei = (amount) => Number(web3.utils.fromWei(String(amount)));
 
@@ -79,20 +80,46 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
 
     it("should be able to claim mining rewards from multiple tokens", async function () {
       const initialBalance = await muse.balanceOf(alice);
+      const initialOperatorBalance = await muse.balanceOf(operator);
       await tools.claimMultiple(IDS, { from: alice });
       const finalBalance = await muse.balanceOf(alice);
 
-      assert.equal(fromWei(finalBalance), fromWei(initialBalance) + 60 - 3); // 10*6 + 3 fee
+      assert.equal(
+        fromWei(finalBalance),
+        fromWei(initialBalance) + 60 * (1 - 0.05)
+      ); // 10*6 -5% fee
+
+      const toolsBalance = await muse.balanceOf(tools.address);
+      assert.equal(toolsBalance, 0);
+
+      const finalOperatorBalance = await muse.balanceOf(operator);
+      assert.equal(
+        fromWei(finalOperatorBalance) - fromWei(initialOperatorBalance),
+        60 * 0.05
+      );
     });
 
     it("should be able to feed multiple tokens", async function () {
       await muse.approve(tools.address, toWei(100), { from: alice });
 
       const initialBalance = await muse.balanceOf(alice);
+      const initialOperatorBalance = await muse.balanceOf(operator);
       await tools.feedMultiple(IDS, Array(10).fill(1), { from: alice });
       const finalBalance = await muse.balanceOf(alice);
 
-      assert.equal(fromWei(finalBalance), fromWei(initialBalance) - 50 - 3); // 10*6 + 3 fee
+      assert.equal(
+        fromWei(finalBalance),
+        fromWei(initialBalance) - 50 * (1 + 0.05)
+      ); // 10*5 -5% fee
+
+      const toolsBalance = await muse.balanceOf(tools.address);
+      assert.equal(toolsBalance, 0);
+
+      const finalOperatorBalance = await muse.balanceOf(operator);
+      assert.equal(
+        fromWei(finalOperatorBalance),
+        fromWei(initialOperatorBalance) + 50 * 0.05
+      );
     });
   });
 });

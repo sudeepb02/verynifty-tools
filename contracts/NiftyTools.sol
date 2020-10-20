@@ -61,7 +61,8 @@ contract NiftyTools is Ownable {
         }
 
         // Charge fees
-        require(muse.transfer(owner(), fee));
+        uint256 feeAmt = muse.balanceOf(address(this)).mul(fee).div(100000);
+        require(muse.transfer(owner(), feeAmt));
 
         // Send rest to user
         require(muse.transfer(msg.sender, muse.balanceOf(address(this))));
@@ -92,7 +93,9 @@ contract NiftyTools is Ownable {
             muse.transferFrom(msg.sender, address(this), museCost),
             "MUSE:Items"
         );
-        require(muse.transferFrom(msg.sender, owner(), fee), "MUSE:fee");
+
+        uint256 feeAmt = museCost.mul(fee).div(100000);
+        require(muse.transferFrom(msg.sender, owner(), feeAmt), "MUSE:fee");
 
         require(muse.approve(address(vnft), museCost), "MUSE:approve");
 
@@ -113,5 +116,9 @@ contract NiftyTools is Ownable {
 
     function setFee(uint256 _fee) public onlyOwner {
         fee = _fee;
+    }
+
+    function setPause(bool _paused) public onlyOwner {
+        paused = _paused;
     }
 }

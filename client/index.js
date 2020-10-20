@@ -587,6 +587,8 @@ $("#confirmBtn").click(async () => {
     }
   }
 
+  if (idsToFeed.length == 0) return alert("Nothing to feed here!");
+
   // Check if user has added tools contract as care taker
   await checkCareTaker(idsToFeed);
 
@@ -601,7 +603,6 @@ $("#confirmBtn").click(async () => {
 });
 
 $("#feedBtn").click(() => {
-  console.log("feed called");
   const options = `
     <option selected value="0">None</option>
     <option value="1">Gem #1</option>
@@ -618,7 +619,8 @@ $("#feedBtn").click(() => {
       `<select 
         id="feed-ids${token.tokenId}" 
         class="custom-select mt-4" 
-        onchange="updateItemOption(${token.tokenId})">
+        onchange="updateItemOption(${token.tokenId})"
+        style="margin-top:0px!important;">
         ${options}
       </select>`
     );
