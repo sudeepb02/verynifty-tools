@@ -581,9 +581,14 @@ async function checkCareTaker(tokenIds) {
   return true;
 }
 
+function resetMine() {
+  $("#mineBtn").removeClass("btn-outline-dark").addClass("btn-dark");
+}
+
 // TOOLS
 
 $("#mineBtn").click(async () => {
+  $("#mineBtn").removeClass("btn-dark").addClass("btn-outline-dark");
   let idsToClaim = [];
 
   for (let i = 0; i < userNFTs.length; i++) {
@@ -596,17 +601,24 @@ $("#mineBtn").click(async () => {
 
   console.log("Claiming MUSE for tokens", idsToClaim);
 
-  if (idsToClaim.length == 0) return alert("Nothing to claim yet!");
+  if (idsToClaim.length == 0) {
+    resetMine();
+    return alert("Nothing to claim yet!");
+  }
 
   // Check if user has added tools contract as care taker
   const success = await checkCareTaker(idsToClaim);
 
-  if (!success) return;
+  if (!success) {
+    resetMine();
+    return;
+  }
 
   // Send feed multiple tx
   try {
     await tools.methods.claimMultiple(idsToClaim).send();
   } catch (error) {
+    resetMine();
     console.log(error.message);
   }
 
@@ -633,9 +645,16 @@ $("#confirmBtn").click(async () => {
 
   console.log("Total Cost", totalCost);
 
-  if (idsToFeed.length == 0) return alert("Nothing to feed here!");
-  if (fromWei(museBalance) < totalCost * 1.05)
+  if (idsToFeed.length == 0) {
+    $("#feedBtn").show();
+    $("#confirmBtn").hide();
+    return alert("Nothing to feed here!");
+  }
+  if (fromWei(museBalance) < totalCost * 1.05) {
+    $("#feedBtn").show();
+    $("#confirmBtn").hide();
     return alert("Not enough MUSE balance!");
+  }
 
   // Check if user has added tools contract as care taker
   const success = await checkCareTaker(idsToFeed);
@@ -689,7 +708,7 @@ $("#feedBtn").click(() => {
 // NAVIGATION
 
 $("#eventsLink").click(() => {
-  $("#scanner-container, #nft-container, #leaders-container").hide();
+  $("#scanner-container, #nft-container, #leaders-container, #welcome").hide();
   $("#scannerLink, #homeLink, #leadersLink").removeClass("active");
 
   $("#eventsLink").addClass("active");
@@ -699,7 +718,7 @@ $("#eventsLink").click(() => {
 });
 
 $("#leadersLink").click(() => {
-  $("#nft-container, #events-container, #scanner-container").hide();
+  $("#nft-container, #events-container, #scanner-container, #welcome").hide();
   $("#homeLink, #eventsLink, #scannerLink").removeClass("active");
 
   $("#leadersLink").addClass("active");
@@ -709,7 +728,7 @@ $("#leadersLink").click(() => {
 });
 
 $("#scannerLink").click(() => {
-  $("#nft-container, #events-container,#leaders-container").hide();
+  $("#nft-container, #events-container,#leaders-container, #welcome").hide();
   $("#homeLink, #eventsLink, #leadersLink").removeClass("active");
 
   $("#scannerLink").addClass("active");
@@ -719,7 +738,9 @@ $("#scannerLink").click(() => {
 });
 
 $("#homeLink").click(() => {
-  $("#scanner-container, #events-container, #leaders-container").hide();
+  $(
+    "#scanner-container, #events-container, #leaders-container, #welcome"
+  ).hide();
   $("#scannerLink, #eventsLink, #leadersLink").removeClass("active");
 
   $("#homeLink").addClass("active");
@@ -734,5 +755,10 @@ $("#acceptConditions").click(() => {
   $("#user-nfts").append("Loading...");
   $("#warningModal").modal("hide");
   fetchNFTs();
-  $("#nft-container, .page-footer").show();
+  $("#welcome, .page-footer").show();
+});
+
+$("#startBtn").click(() => {
+  $("#welcome").hide();
+  $("#nft-container").show();
 });

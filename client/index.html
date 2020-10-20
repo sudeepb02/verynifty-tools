@@ -66,7 +66,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
         <div class="navbar-nav mr-auto">
-          <a class="nav-link active" href="#" id="homeLink">My vNFTs </a>
+          <a class="nav-link" href="#" id="homeLink">My vNFTs </a>
           <a class="nav-link" href="#" id="scannerLink">Scanner</a>
           <a class="nav-link" href="#" id="leadersLink">Leaderboard</a>
           <a class="nav-link" href="#" id="eventsLink">Events</a>
@@ -80,6 +80,24 @@
       </div>
     </nav>
 
+    <!-- Home -->
+    <div class="jumbotron" id="welcome" style="display: none">
+      <h1 class="display-4">Hello, cryptonaut!</h1>
+      <p class="lead">Handy tools for the Very Nifty dApp.</p>
+      <hr class="my-4" />
+      <p>
+        View your dashboard, scan the vNFT market, leaderboard and events. Feed
+        and Claim your mining rewards for all of your NFTs in one single
+        transaction, paying a 5% fee (be aware that the first time you will need
+        to add the smart contract as care taker, for EACH of your vNFTs, which
+        can result in multiple transactions. This will only happen once for
+        every vNFT)
+      </p>
+      <a class="btn btn-dark mt-3" href="#" role="button" id="startBtn"
+        >Go to Dashboard</a
+      >
+    </div>
+
     <!-- User vNFTs View -->
     <div id="nft-container" class="container mt-5 mb-3" style="display: none">
       <div class="row">
@@ -92,7 +110,25 @@
                 <p id="muse-balance"></p>
                 <p id="muse-price"></p>
               </div>
-              <div class="col">
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Death Time</th>
+                    <th scope="col">Mine Time</th>
+                    <th scope="col">MUSE/day</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody id="user-nfts"></tbody>
+              </table>
+            </div>
+            <div class="row justify-content-between mt-3">
+              <div class="col text-center">
                 <button
                   class="btn btn-dark"
                   id="feedBtn"
@@ -111,7 +147,6 @@
                   CONFIRM
                 </button>
               </div>
-
               <div class="col">
                 <button
                   class="btn btn-dark"
@@ -124,22 +159,6 @@
                   MINE
                 </button>
               </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-striped table-hover">
-                <thead>
-                  <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Level</th>
-                    <th scope="col">Score</th>
-                    <th scope="col">Death Time</th>
-                    <th scope="col">Mine Time</th>
-                    <th scope="col">MUSE/day</th>
-                    <th scope="col"></th>
-                  </tr>
-                </thead>
-                <tbody id="user-nfts"></tbody>
-              </table>
             </div>
           </div>
         </div>
@@ -246,7 +265,7 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Modal title</h5>
+            <h5 class="modal-title font-weight-bold">Warning!</h5>
             <button
               type="button"
               class="close"
@@ -258,7 +277,7 @@
           </div>
           <div class="modal-body">
             <p>
-              vNFT is not an investment vehicle. The VeryNifty Gallery is an
+              vNFT is not an investment vehicle. VeryNifty Gallery is an
               experimental game and currently in beta. Any risks you take using
               this platform are your own. This is not an investment vehicle.
               Caution is advised.
