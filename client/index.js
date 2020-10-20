@@ -21,6 +21,8 @@ $(document).ready(async () => {
   // this allows the website to use the metamask account
   const accounts = await ethereum.enable();
 
+  $("#warningModal").modal("show");
+
   web3 = new Web3(ethereum);
 
   toWei = (amount) => web3.utils.toWei(String(amount));
@@ -44,9 +46,6 @@ $(document).ready(async () => {
   pair = new web3.eth.Contract(uniswapAbi, uniswapPairAddress);
   getMusePrice();
   setUserAcc();
-
-  $("#user-nfts").append("Loading...");
-  fetchNFTs();
 });
 
 function formatNumber(num) {
@@ -729,4 +728,11 @@ $("#homeLink").click(() => {
 
 $(".navbar-nav>a").click(function () {
   $(".navbar-collapse").collapse("hide");
+});
+
+$("#acceptConditions").click(() => {
+  $("#user-nfts").append("Loading...");
+  $("#warningModal").modal("hide");
+  fetchNFTs();
+  $("#nft-container, .page-footer").show();
 });
