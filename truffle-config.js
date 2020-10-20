@@ -19,6 +19,7 @@ module.exports = {
       network_id: 1,
       gasPrice: 25e9,
       gas: 2e6,
+      timeoutBlocks: 100,
     },
     remote: {
       provider() {

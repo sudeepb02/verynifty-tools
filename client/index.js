@@ -1,20 +1,20 @@
 // Global Variables
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
 const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
-const toolsAddress = "0xc61A74d848CF2f0dCCf6c5a19ae2B2E6D7c6B530";
+const toolsAddress = "0xa2cD4f0CA0Ab2504C5ee4f3c8E2d7E486b24d8fe";
 const uniswapPairAddress = "0x20d2C17d1928EF4290BF17F922a10eAa2770BF43";
 let user, instance, muse, tools, web3, toWei, fromWei;
 const { flow, partialRight: pr, keyBy, values } = _;
 const lastUniqBy = (iteratee) => flow(pr(keyBy, iteratee), values);
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-// const CREATION_BLOCK = 11023280;
-const CREATION_BLOCK = 0;
+const CREATION_BLOCK = 11023280;
 const ONE_DAY = 24 * 60 * 60;
 const MIN_TIME = 6 * 60 * 60; // 6 hours
 const BLOCK_TIME = 13;
 let userNFTs = [];
 let scanned = false;
 let eventCounter = 0;
+let museBalance = 0;
 
 //Executed when page finish loading
 $(document).ready(async () => {
@@ -83,11 +83,10 @@ async function fetchNFTs() {
       alert("No tokens found!");
     }
 
-    const balance = await muse.methods.balanceOf(user).call();
+    museBalance = await muse.methods.balanceOf(user).call();
     const price = await getMusePrice();
-    $("#muse-balance").html(
-      `MUSE Balance: ${fromWei(balance)} (1 MUSE = ${price} ETH )`
-    );
+    $("#muse-balance").html(`MUSE Balance: ${fromWei(museBalance)}`);
+    $("#muse-price").html(`Price: 1 MUSE = ${price} ETH`);
 
     for (let i = 0; i < tokens.length; i++) {
       const tokenId = tokens[i];
@@ -183,6 +182,9 @@ async function fetchNFTs() {
         `);
 
     $("#total-nfts").html(`Total Owned: ${totalOwned}`);
+
+    $("#feedBtn").show();
+    $("#mineBtn").show();
   }
 }
 
@@ -215,6 +217,23 @@ function getItemScore(id) {
       return 444;
     case 5:
       return 1;
+    default:
+      return 0;
+  }
+}
+
+function getItemPrice(id) {
+  switch (parseInt(id)) {
+    case 1:
+      return 5;
+    case 2:
+      return 6;
+    case 3:
+      return 3;
+    case 4:
+      return 13;
+    case 5:
+      return 12;
     default:
       return 0;
   }
@@ -546,13 +565,21 @@ async function checkCareTaker(tokenIds) {
   for (let i = 0; i < tokenIds.length; i++) {
     try {
       const id = tokenIds[i];
-      const isCareTaker = await instance.careTaker(id, toolsAddress).call();
+      const current = await instance.methods.careTaker(id, user).call();
+      console.log(current, toolsAddress);
 
-      if (!isCareTaker) await instance.addCareTaker(id, toolsAddress).send();
+      if (current != toolsAddress) {
+        console.log("adding care taker for token #", id);
+        await instance.methods.addCareTaker(id, toolsAddress).send();
+      }
     } catch (error) {
       console.log(error.message);
+      alert(`Error: ${error.message}`);
+      return false;
     }
   }
+
+  return true;
 }
 
 // TOOLS
@@ -561,22 +588,21 @@ $("#mineBtn").click(async () => {
   let idsToClaim = [];
 
   for (let i = 0; i < userNFTs.length; i++) {
-    const { tokenId } = userNFTs[i];
+    const { tokenId, mineTime } = userNFTs[i];
 
-    const { _lastTimeMined } = await instance.methods
-      .getVnftInfo(tokenId)
-      .call();
-
-    if (Date.now() / 1000 > _lastTimeMined + ONE_DAY) {
-      console.log(_lastTimeMined);
+    if (mineTime == 0) {
       idsToClaim.push(tokenId);
     }
   }
 
+  console.log("Claiming MUSE for tokens", idsToClaim);
+
   if (idsToClaim.length == 0) return alert("Nothing to claim yet!");
 
   // Check if user has added tools contract as care taker
-  await checkCareTaker(idsToClaim);
+  const success = await checkCareTaker(idsToClaim);
+
+  if (!success) return;
 
   // Send feed multiple tx
   try {
@@ -591,6 +617,7 @@ $("#mineBtn").click(async () => {
 $("#confirmBtn").click(async () => {
   let idsToFeed = [];
   let itemIds = [];
+  let totalCost = 0;
   for (let i = 0; i < userNFTs.length; i++) {
     const { tokenId } = userNFTs[i];
 
@@ -599,32 +626,48 @@ $("#confirmBtn").click(async () => {
     if (selected > 0) {
       idsToFeed.push(tokenId);
       itemIds.push(selected);
+      totalCost += getItemPrice(selected);
     }
   }
 
+  console.log(idsToFeed, itemIds);
+
+  console.log("Total Cost", totalCost);
+
   if (idsToFeed.length == 0) return alert("Nothing to feed here!");
+  if (fromWei(museBalance) < totalCost * 1.05)
+    return alert("Not enough MUSE balance!");
 
   // Check if user has added tools contract as care taker
-  await checkCareTaker(idsToFeed);
+  const success = await checkCareTaker(idsToFeed);
+  if (!success) return;
 
   // Send feed multiple tx
   try {
+    const allowance = await muse.methods.allowance(user, toolsAddress).call();
+
+    const infinite = String(
+      web3.utils.toBN(2).pow(web3.utils.toBN(256)).sub(web3.utils.toBN(1))
+    );
+
+    if (fromWei(allowance) < totalCost * 1.05)
+      await muse.methods.approve(toolsAddress, infinite).send();
+
+    // Execute Feed
     await tools.methods.feedMultiple(idsToFeed, itemIds).send();
   } catch (error) {
     console.log(error.message);
   }
-
-  console.log(idsToFeed, itemIds);
 });
 
 $("#feedBtn").click(() => {
   const options = `
     <option selected value="0">None</option>
-    <option value="1">Gem #1</option>
-    <option value="2">Gem #2</option>
-    <option value="3">Gem #3</option>
-    <option value="4">Gem #4</option>
-    <option value="5">Gem #5</option>
+    <option value="1" data-toggle="tooltip" data-placement="right" title="MUSE: 5, TOD:3, SCORE:100 ">Gem #1</option>
+    <option value="2" data-toggle="tooltip" data-placement="right" title="MUSE: 6, TOD:2, SCORE:190 ">Gem #2</option>
+    <option value="3" data-toggle="tooltip" data-placement="right" title="MUSE: 3, TOD:4, SCORE:1 ">Gem #3</option>
+    <option value="4" data-toggle="tooltip" data-placement="right" title="MUSE: 13, TOD:1, SCORE:444 ">Gem #4</option>
+    <option value="5" data-toggle="tooltip" data-placement="right" title="MUSE: 12, TOD:7, SCORE:1 ">Gem #5</option>
   `;
 
   for (let i = 0; i < userNFTs.length; i++) {
@@ -634,7 +677,6 @@ $("#feedBtn").click(() => {
       `<select 
         id="feed-ids${token.tokenId}" 
         class="custom-select mt-4" 
-        onchange="updateItemOption(${token.tokenId})"
         style="margin-top:0px!important;">
         ${options}
       </select>`

@@ -24,6 +24,10 @@
         font-size: 0.7rem;
       } /*1rem = 16px*/
 
+      p {
+        margin: 5px;
+      }
+
       /* Medium devices (tablets, 768px and up) The navbar toggle appears at this breakpoint */
       @media (min-width: 768px) {
         table {
@@ -86,9 +90,12 @@
                 <h5 class="card-title font-weight-bold">DASHBOARD</h5>
                 <p id="total-nfts"></p>
                 <p id="muse-balance"></p>
+                <p id="muse-price"></p>
               </div>
               <div class="col">
-                <button class="btn btn-dark" id="feedBtn">FEED</button>
+                <button class="btn btn-dark" id="feedBtn" style="display: none">
+                  FEED
+                </button>
                 <button
                   class="btn btn-outline-dark"
                   id="confirmBtn"
@@ -99,7 +106,9 @@
               </div>
 
               <div class="col">
-                <button class="btn btn-dark" id="mineBtn">MINE</button>
+                <button class="btn btn-dark" id="mineBtn" style="display: none">
+                  MINE
+                </button>
               </div>
             </div>
             <div class="table-responsive">

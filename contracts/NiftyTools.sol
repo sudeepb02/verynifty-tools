@@ -32,6 +32,7 @@ contract NiftyTools is Ownable {
     IERC20 public muse;
     uint256 public maxIds = 20;
     uint256 public fee;
+    address public feeRecipient;
     bool paused;
 
     constructor(
@@ -42,6 +43,7 @@ contract NiftyTools is Ownable {
         vnft = _vnft;
         muse = _muse;
         fee = _fee;
+        feeRecipient = msg.sender;
     }
 
     modifier notPaused() {
@@ -62,7 +64,7 @@ contract NiftyTools is Ownable {
 
         // Charge fees
         uint256 feeAmt = muse.balanceOf(address(this)).mul(fee).div(100000);
-        require(muse.transfer(owner(), feeAmt));
+        require(muse.transfer(feeRecipient, feeAmt));
 
         // Send rest to user
         require(muse.transfer(msg.sender, muse.balanceOf(address(this))));
@@ -95,7 +97,10 @@ contract NiftyTools is Ownable {
         );
 
         uint256 feeAmt = museCost.mul(fee).div(100000);
-        require(muse.transferFrom(msg.sender, owner(), feeAmt), "MUSE:fee");
+        require(
+            muse.transferFrom(msg.sender, feeRecipient, feeAmt),
+            "MUSE:fee"
+        );
 
         require(muse.approve(address(vnft), museCost), "MUSE:approve");
 
@@ -116,6 +121,11 @@ contract NiftyTools is Ownable {
 
     function setFee(uint256 _fee) public onlyOwner {
         fee = _fee;
+    }
+
+    function setFeeRecipient(address _feeRecipient) public onlyOwner {
+        require(_feeRecipient != address(0));
+        feeRecipient = _feeRecipient;
     }
 
     function setPause(bool _paused) public onlyOwner {

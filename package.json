@@ -11,7 +11,8 @@
     "test": "truffle test",
     "kill": "node scripts/kill",
     "soon": "node scripts/soon",
-    "myNFTs": "node scripts/myNFTs"
+    "myNFTs": "node scripts/myNFTs",
+    "flat": "truffle-flattener contracts/NiftyTools.sol > flats/NiftyTools.sol"
   },
   "keywords": [],
   "author": "",
