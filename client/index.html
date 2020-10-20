@@ -83,13 +83,23 @@
           <div class="card-body">
             <div class="row">
               <div class="col-8">
-                <h5 class="card-title font-weight-bold">My vNFTs</h5>
+                <h5 class="card-title font-weight-bold">DASHBOARD</h5>
                 <p id="total-nfts"></p>
+                <p id="muse-balance"></p>
               </div>
               <div class="col">
-                <button class="btn btn-outline-info" onclick="addCareTaker()">
-                  Add CareTaker
+                <button class="btn btn-dark" id="feedBtn">FEED</button>
+                <button
+                  class="btn btn-outline-dark"
+                  id="confirmBtn"
+                  style="display: none"
+                >
+                  CONFIRM
                 </button>
+              </div>
+
+              <div class="col">
+                <button class="btn btn-dark" id="mineBtn">MINE</button>
               </div>
             </div>
             <div class="table-responsive">
@@ -248,6 +258,7 @@
     <!-- Scripts -->
     <script src="abi.js"></script>
     <script src="erc20.js"></script>
+    <script src="toolsAbi.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

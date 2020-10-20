@@ -1,11 +1,13 @@
 // Global Variables
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
 const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
-let user, instance, muse, web3, toWei, fromWei;
+const toolsAddress = "0xc61A74d848CF2f0dCCf6c5a19ae2B2E6D7c6B530";
+let user, instance, muse, tools, web3, toWei, fromWei;
 const { flow, partialRight: pr, keyBy, values } = _;
 const lastUniqBy = (iteratee) => flow(pr(keyBy, iteratee), values);
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const CREATION_BLOCK = 11023280;
+// const CREATION_BLOCK = 11023280;
+const CREATION_BLOCK = 0;
 const ONE_DAY = 24 * 60 * 60;
 const MIN_TIME = 6 * 60 * 60; // 6 hours
 const BLOCK_TIME = 13;
@@ -37,6 +39,7 @@ $(document).ready(async () => {
   //Create vNFT instance
   instance = new web3.eth.Contract(abi, contractAddress, { from: user });
   muse = new web3.eth.Contract(erc20Abi, tokenAddress, { from: user });
+  tools = new web3.eth.Contract(toolsAbi, toolsAddress, { from: user });
   setUserAcc();
 
   $("#user-nfts").append("Loading...");
@@ -67,6 +70,9 @@ async function fetchNFTs() {
     if (tokens.length === 0) {
       alert("No tokens found!");
     }
+
+    const balance = await muse.methods.balanceOf(user).call();
+    $("#muse-balance").html(`MUSE Balance: ${fromWei(balance)}`);
 
     for (let i = 0; i < tokens.length; i++) {
       const tokenId = tokens[i];
@@ -136,9 +142,11 @@ async function fetchNFTs() {
             <td>${t.starvingTime ? t.starvingTime : "DEAD!!"}</td>
             <td>${t.mineTime ? t.mineTime : "MINE NOW!"}</td>
             <td>${Number(fromWei(t._expectedReward)).toFixed(2)}</td>
-            <td><a href="https://gallery.verynifty.io/nft/${
+            <td id="link${
               t.tokenId
-            }" target="_blank">check</a></td>
+            }"><a href="https://gallery.verynifty.io/nft/${
+          t.tokenId
+        }" target="_blank">check</a></td>
         </tr>
         `);
       });
@@ -155,11 +163,11 @@ async function fetchNFTs() {
             <td></td>
             <td></td>
             <td class="font-weight-bold">${Number(totalRewards).toFixed(2)}</td>
-            <td></td>
+            <td ></td>
         </tr>
         `);
 
-    $("#total-nfts").html(`Total: ${totalOwned}`);
+    $("#total-nfts").html(`Total Owned: ${totalOwned}`);
   }
 }
 
@@ -517,6 +525,108 @@ async function addCareTaker(tokenId) {
     console.log(error.message);
   }
 }
+
+async function checkCareTaker(tokenIds) {
+  // Add Care Taker if not added already
+  for (let i = 0; i < tokenIds.length; i++) {
+    try {
+      const id = tokenIds[i];
+      const isCareTaker = await instance.careTaker(id, toolsAddress).call();
+
+      if (!isCareTaker) await instance.addCareTaker(id, toolsAddress).send();
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+}
+
+// TOOLS
+
+$("#mineBtn").click(async () => {
+  let idsToClaim = [];
+
+  for (let i = 0; i < userNFTs.length; i++) {
+    const { tokenId } = userNFTs[i];
+
+    const { _lastTimeMined } = await instance.methods
+      .getVnftInfo(tokenId)
+      .call();
+
+    if (Date.now() / 1000 > _lastTimeMined + ONE_DAY) {
+      console.log(_lastTimeMined);
+      idsToClaim.push(tokenId);
+    }
+  }
+
+  if (idsToClaim.length == 0) return alert("Nothing to claim yet!");
+
+  // Check if user has added tools contract as care taker
+  await checkCareTaker(idsToClaim);
+
+  // Send feed multiple tx
+  try {
+    await tools.methods.claimMultiple(idsToClaim).send();
+  } catch (error) {
+    console.log(error.message);
+  }
+
+  console.log(idsToFeed, itemIds);
+});
+
+$("#confirmBtn").click(async () => {
+  let idsToFeed = [];
+  let itemIds = [];
+  for (let i = 0; i < userNFTs.length; i++) {
+    const { tokenId } = userNFTs[i];
+
+    const selected = parseInt($(`#feed-ids${tokenId}`).val());
+
+    if (selected > 0) {
+      idsToFeed.push(tokenId);
+      itemIds.push(selected);
+    }
+  }
+
+  // Check if user has added tools contract as care taker
+  await checkCareTaker(idsToFeed);
+
+  // Send feed multiple tx
+  try {
+    await tools.methods.feedMultiple(idsToFeed, itemIds).send();
+  } catch (error) {
+    console.log(error.message);
+  }
+
+  console.log(idsToFeed, itemIds);
+});
+
+$("#feedBtn").click(() => {
+  console.log("feed called");
+  const options = `
+    <option selected value="0">None</option>
+    <option value="1">Gem #1</option>
+    <option value="2">Gem #2</option>
+    <option value="3">Gem #3</option>
+    <option value="4">Gem #4</option>
+    <option value="5">Gem #5</option>
+  `;
+
+  for (let i = 0; i < userNFTs.length; i++) {
+    const token = userNFTs[i];
+
+    $(`#link${token.tokenId}`).html(
+      `<select 
+        id="feed-ids${token.tokenId}" 
+        class="custom-select mt-4" 
+        onchange="updateItemOption(${token.tokenId})">
+        ${options}
+      </select>`
+    );
+  }
+
+  $("#feedBtn").hide();
+  $("#confirmBtn").show();
+});
 
 // NAVIGATION
 
