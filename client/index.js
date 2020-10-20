@@ -1,7 +1,7 @@
 // Global Variables
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
 const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
-const toolsAddress = "0xa2cD4f0CA0Ab2504C5ee4f3c8E2d7E486b24d8fe";
+const toolsAddress = "0xE3b8541655D70804526E366D7B8C914b8eCd944A";
 const uniswapPairAddress = "0x20d2C17d1928EF4290BF17F922a10eAa2770BF43";
 let user, instance, muse, tools, web3, toWei, fromWei;
 const { flow, partialRight: pr, keyBy, values } = _;

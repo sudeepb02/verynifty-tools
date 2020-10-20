@@ -59,6 +59,7 @@ contract NiftyTools is Ownable {
         require(ids.length <= maxIds, "LENGTH");
 
         for (uint256 i = 0; i < ids.length; i++) {
+            require(vnft.ownerOf(ids[i]) == msg.sender);
             vnft.claimMiningRewards(ids[i]);
         }
 
@@ -105,6 +106,7 @@ contract NiftyTools is Ownable {
         require(muse.approve(address(vnft), museCost), "MUSE:approve");
 
         for (uint256 i = 0; i < ids.length; i++) {
+            require(vnft.ownerOf(ids[i]) == msg.sender);
             vnft.buyAccesory(ids[i], itemIds[i]);
         }
     }

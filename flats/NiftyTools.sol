@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: MIT
 // File: @openzeppelin/contracts/GSN/Context.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -14,17 +15,19 @@ pragma solidity ^0.6.0;
  * This contract is only required for intermediate, library-like contracts.
  */
 abstract contract Context {
-    function _msgSender() internal virtual view returns (address payable) {
+    function _msgSender() internal view virtual returns (address payable) {
         return msg.sender;
     }
 
-    function _msgData() internal virtual view returns (bytes memory) {
+    function _msgData() internal view virtual returns (bytes memory) {
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
         return msg.data;
     }
 }
 
 // File: @openzeppelin/contracts/access/Ownable.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -43,15 +46,12 @@ pragma solidity ^0.6.0;
 contract Ownable is Context {
     address private _owner;
 
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor() internal {
+    constructor () internal {
         address msgSender = _msgSender();
         _owner = msgSender;
         emit OwnershipTransferred(address(0), msgSender);
@@ -89,16 +89,15 @@ contract Ownable is Context {
      * Can only be called by the current owner.
      */
     function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address"
-        );
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
         emit OwnershipTransferred(_owner, newOwner);
         _owner = newOwner;
     }
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -157,11 +156,7 @@ library SafeMath {
      *
      * - Subtraction cannot overflow.
      */
-    function sub(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         uint256 c = a - b;
 
@@ -220,11 +215,7 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function div(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         uint256 c = a / b;
         // assert(a == b * c + a % b); // There is no case in which this doesn't hold
@@ -260,17 +251,15 @@ library SafeMath {
      *
      * - The divisor cannot be zero.
      */
-    function mod(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b != 0, errorMessage);
         return a % b;
     }
 }
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -295,9 +284,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -306,10 +293,7 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint256);
 
     /**
      * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
@@ -336,11 +320,7 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -354,16 +334,17 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 // File: contracts/NiftyTools.sol
 
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.0;
+
+
+
 
 interface IVNFT {
     function fatality(uint256 _deadId, uint256 _tokenId) external;
@@ -418,6 +399,7 @@ contract NiftyTools is Ownable {
         require(ids.length <= maxIds, "LENGTH");
 
         for (uint256 i = 0; i < ids.length; i++) {
+            require(vnft.ownerOf(ids[i]) == msg.sender);
             vnft.claimMiningRewards(ids[i]);
         }
 
@@ -464,6 +446,7 @@ contract NiftyTools is Ownable {
         require(muse.approve(address(vnft), museCost), "MUSE:approve");
 
         for (uint256 i = 0; i < ids.length; i++) {
+            require(vnft.ownerOf(ids[i]) == msg.sender);
             vnft.buyAccesory(ids[i], itemIds[i]);
         }
     }
