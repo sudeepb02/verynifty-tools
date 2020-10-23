@@ -12,7 +12,8 @@
     "kill": "node scripts/kill",
     "soon": "node scripts/soon",
     "myNFTs": "node scripts/myNFTs",
-    "flat": "truffle-flattener contracts/NiftyTools.sol > flats/NiftyTools.sol"
+    "flat": "truffle-flattener contracts/NiftyTools.sol > flats/NiftyTools.sol",
+    "build": "browserify client/index.js > client/bundle.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,9 @@
   "dependencies": {
     "@openzeppelin/contracts": "^3.2.0",
     "@truffle/hdwallet-provider": "^1.1.0",
+    "abi-decoder": "^2.3.0",
     "axios": "^0.20.0",
+    "browserify": "^17.0.0",
     "dotenv": "^8.2.0",
     "excel4node": "^1.7.2",
     "moment": "^2.29.1",

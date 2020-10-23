@@ -1,3 +1,6 @@
+const abiDecoder = require("abi-decoder"); // NodeJS
+abiDecoder.addABI(abi);
+
 // Global Variables
 const contractAddress = "0x57f0B53926dd62f2E26bc40B30140AbEA474DA94";
 const tokenAddress = "0xB6Ca7399B4F9CA56FC27cBfF44F4d2e4Eef1fc81";
@@ -82,10 +85,16 @@ async function fetchNFTs() {
       alert("No tokens found!");
     }
 
+    const ethPrice = await fetchEthPrice();
+
     museBalance = await muse.methods.balanceOf(user).call();
     const price = await getMusePrice();
     $("#muse-balance").html(`MUSE Balance: ${fromWei(museBalance)}`);
-    $("#muse-price").html(`Price: 1 MUSE = ${price} ETH`);
+    $("#muse-price").html(
+      `Price: 1 MUSE = ${price} ETH ($${Number(ethPrice * price).toFixed(
+        2
+      )} USD)`
+    );
 
     for (let i = 0; i < tokens.length; i++) {
       const tokenId = tokens[i];
@@ -152,7 +161,11 @@ async function fetchNFTs() {
             <th scope="row">${t.tokenId}</th>
             <td>${t._level}</td>
             <td>${t._score}</td>
-            <td>${t.starvingTime ? t.starvingTime : "DEAD!!"}</td>
+            <td>${
+              t.timeRemaining > 0
+                ? new Date(t.timeRemaining * 1000).toISOString().substr(11, 8)
+                : "DEAD!!"
+            }</td>
             <td>${t.mineTime ? t.mineTime : "MINE NOW!"}</td>
             <td>${Number(fromWei(t._expectedReward)).toFixed(2)}</td>
             <td id="link${
@@ -182,8 +195,7 @@ async function fetchNFTs() {
 
     $("#total-nfts").html(`Total Owned: ${totalOwned}`);
 
-    $("#feedBtn").show();
-    $("#mineBtn").show();
+    $("#feedBtn, #mineBtn, #refreshBtn").show();
   }
 }
 
@@ -473,12 +485,15 @@ async function killNFT(id) {
   }
 }
 
-function renderEvent(event, txHash) {
+function renderEvent(event, txHash, data) {
   eventCounter++;
+  let title = "";
+  data.events.forEach((e) => (title += `${e.name}: ${e.value}\n`));
+  const tooltip = `data-toggle="tooltip" data-placement="left" title="${title}"`;
   return $("#events-nfts").append(`
     <tr>
       <th scope="row">${eventCounter}</th>
-      <td>${event}</td>
+      <td ${tooltip}>${event}</td>
       <td><a href="https://etherscan.io/tx/${txHash}" target="_blank">check</a></td>
     </tr>
   `);
@@ -497,7 +512,19 @@ async function checkEvents() {
     toBlock: "latest",
   });
   mintEvents = mintEvents.map((e) => {
-    return { name: "Minted", txHash: e.transactionHash, block: e.blockNumber };
+    const logData = [
+      {
+        data: e.raw.data,
+        topics: e.raw.topics,
+      },
+    ];
+    const decodedData = abiDecoder.decodeLogs(logData).pop();
+    return {
+      name: "Minted",
+      txHash: e.transactionHash,
+      block: e.blockNumber,
+      decodedData,
+    };
   });
 
   let fatalityEvents = await instance.getPastEvents("VnftFatalized", {
@@ -505,7 +532,19 @@ async function checkEvents() {
     toBlock: "latest",
   });
   fatalityEvents = fatalityEvents.map((e) => {
-    return { name: "Killed", txHash: e.transactionHash, block: e.blockNumber };
+    const logData = [
+      {
+        data: e.raw.data,
+        topics: e.raw.topics,
+      },
+    ];
+    const decodedData = abiDecoder.decodeLogs(logData).pop();
+    return {
+      name: "Fatality",
+      txHash: e.transactionHash,
+      block: e.blockNumber,
+      decodedData,
+    };
   });
 
   let consumeEvents = await instance.getPastEvents("VnftConsumed", {
@@ -513,10 +552,18 @@ async function checkEvents() {
     toBlock: "latest",
   });
   consumeEvents = consumeEvents.map((e) => {
+    const logData = [
+      {
+        data: e.raw.data,
+        topics: e.raw.topics,
+      },
+    ];
+    const decodedData = abiDecoder.decodeLogs(logData).pop();
     return {
       name: "Item Consumed",
       txHash: e.transactionHash,
       block: e.blockNumber,
+      decodedData,
     };
   });
 
@@ -524,7 +571,7 @@ async function checkEvents() {
 
   totalEvents
     .sort((a, b) => b.block - a.block)
-    .forEach((e) => renderEvent(e.name, e.txHash));
+    .forEach((e) => renderEvent(e.name, e.txHash, e.decodedData));
 }
 
 function setUserAcc() {
@@ -585,6 +632,22 @@ function resetMine() {
   $("#mineBtn").removeClass("btn-outline-dark").addClass("btn-dark");
 }
 
+function refreshDashboard() {
+  userNFTs = [];
+  $("#user-nfts").empty();
+  $("#feedBtn, #confirmBtn, #mineBtn, #refreshBtn").hide();
+
+  fetchNFTs();
+}
+
+async function fetchEthPrice() {
+  const res = await fetch(
+    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=USD"
+  );
+  const data = await res.json();
+  return data.ethereum.usd;
+}
+
 // TOOLS
 
 $("#mineBtn").click(async () => {
@@ -617,6 +680,7 @@ $("#mineBtn").click(async () => {
   // Send feed multiple tx
   try {
     await tools.methods.claimMultiple(idsToClaim).send();
+    refreshDashboard();
   } catch (error) {
     resetMine();
     console.log(error.message);
@@ -671,6 +735,8 @@ $("#confirmBtn").click(async () => {
     if (fromWei(allowance) < totalCost * 1.05)
       await muse.methods.approve(toolsAddress, infinite).send();
 
+    refreshDashboard();
+
     // Execute Feed
     await tools.methods.feedMultiple(idsToFeed, itemIds).send();
   } catch (error) {
@@ -681,11 +747,11 @@ $("#confirmBtn").click(async () => {
 $("#feedBtn").click(() => {
   const options = `
     <option selected value="0">None</option>
-    <option value="1" data-toggle="tooltip" data-placement="left" title="MUSE: 5, TOD:3, SCORE:100 ">Gem #1</option>
-    <option value="2" data-toggle="tooltip" data-placement="left" title="MUSE: 6, TOD:2, SCORE:190 ">Gem #2</option>
-    <option value="3" data-toggle="tooltip" data-placement="left" title="MUSE: 3, TOD:4, SCORE:1 ">Gem #3</option>
-    <option value="4" data-toggle="tooltip" data-placement="left" title="MUSE: 13, TOD:1, SCORE:444 ">Gem #4</option>
-    <option value="5" data-toggle="tooltip" data-placement="left" title="MUSE: 12, TOD:7, SCORE:1 ">Gem #5</option>
+    <option value="1" data-toggle="tooltip" data-placement="left" title="MUSE: 5, TOD:3 Days, SCORE:100 ">Gem #1</option>
+    <option value="2" data-toggle="tooltip" data-placement="left" title="MUSE: 6, TOD:2 Days, SCORE:190 ">Gem #2</option>
+    <option value="3" data-toggle="tooltip" data-placement="left" title="MUSE: 3, TOD:4 Days, SCORE:1 ">Gem #3</option>
+    <option value="4" data-toggle="tooltip" data-placement="left" title="MUSE: 13, TOD:1 Days, SCORE:444 ">Gem #4</option>
+    <option value="5" data-toggle="tooltip" data-placement="left" title="MUSE: 12, TOD:7 Days, SCORE:1 ">Gem #5</option>
   `;
 
   for (let i = 0; i < userNFTs.length; i++) {
