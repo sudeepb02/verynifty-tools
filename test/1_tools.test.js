@@ -4,9 +4,7 @@ const VNFT = artifacts.require("VNFT");
 const ChiToken = artifacts.require("ChiToken");
 const GasFeed = artifacts.require("GasFeed");
 
-const { expectRevert } = require("@openzeppelin/test-helpers");
-
-require("./utils");
+const { expectRevert, constants, time } = require("@openzeppelin/test-helpers");
 
 const MUSE_FEE = 5000; //  5% MUSE per service
 const INITIAL_AMOUNT = 200;
@@ -62,6 +60,9 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
       // fund address with MUSE
       await muse.transfer(alice, toWei(INITIAL_AMOUNT), { from: operator });
 
+      // mint CHI tokens
+      await chi.mint(150, { from: alice });
+
       // Mint 10 vNFTs
       for (let i = 0; i < 10; i++) {
         await vNFT.mint(alice, { from: operator });
@@ -75,16 +76,22 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
       await tools.approveMuse(toWei("1000000"));
     });
 
-    it("should have muse and vnft tokens", async function () {
+    it("should have muse, vnft and chi tokens", async function () {
       const balance = await muse.balanceOf(alice);
       assert.equal(balance, toWei(INITIAL_AMOUNT));
+
+      const chiBalance = await chi.balanceOf(alice);
+      assert.equal(chiBalance, 150);
 
       const owner = await vNFT.ownerOf(0);
       assert.equal(owner, alice);
     });
 
     it("should get correct available rewards to claim", async function () {
-      await advanceTimeAndBlock(25 * 60 * 60); // 25h later
+      // await advanceTimeAndBlock(25 * 60 * 60); // 25h later
+
+      await time.advanceBlock();
+      await time.increase(25 * 60 * 60);
 
       for (let i = 0; i < IDS.length; i++) {
         const rewards = await vNFT.getRewards(i);
@@ -114,7 +121,7 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
     });
 
     it("should be able to feed multiple tokens", async function () {
-      await muse.approve(tools.address, toWei(200), { from: alice });
+      await muse.approve(tools.address, constants.MAX_UINT256, { from: alice });
 
       const initialBalance = await muse.balanceOf(alice);
       const initialOperatorBalance = await muse.balanceOf(operator);

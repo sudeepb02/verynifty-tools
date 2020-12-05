@@ -3,7 +3,7 @@
 pragma solidity ^0.6.0;
 
 contract GasFeed {
-    int256 currentGasPrice = 70e9;
+    int256 currentGasPrice = 20e9;
 
     function latestAnswer() public view returns (int256) {
         return currentGasPrice;
