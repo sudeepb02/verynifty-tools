@@ -25,7 +25,8 @@ module.exports = async function (deployer, network, accounts) {
     await deployer.deploy(GasFeed);
     await deployer.deploy(MuseToken);
     await deployer.deploy(VNFT, MuseToken.address);    
-    encoded = implementation.contract.methods.initialize(VNFT.address,
+    encoded = implementation.contract.methods.initialize(
+      VNFT.address,
       MuseToken.address,
       ChiToken.address,
       GasFeed.address,

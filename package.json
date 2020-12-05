@@ -9,6 +9,7 @@
     "ganache": "ganache-cli -p 8545 -i 666",
     "deploy": "truffle migrate --reset",
     "test": "truffle test",
+    "test-u": "truffle test test/1_upgrades.test.js",
     "kill": "node scripts/kill",
     "soon": "node scripts/soon",
     "myNFTs": "node scripts/myNFTs",

@@ -43,10 +43,10 @@ contract NiftyTools is EventsPage {
     // );
 
     // Contrac Variables
-    uint256 public maxIds = 20;
+    uint256 public maxIds;
     uint256 public fee;
-    uint256 public minGasPrice = 50e9;
-    uint256 public nextIndex = 0;
+    uint256 public minGasPrice;
+    uint256 public nextIndex;
     address public feeRecipient;
     bool paused;
 
@@ -64,6 +64,9 @@ contract NiftyTools is EventsPage {
         muse = _muse;
         chi = _chi;
         fee = _fee;
+        minGasPrice = 50e9;
+        nextIndex = 0;
+        maxIds = 20;
         gasFeed = _gasFeed;
         feeRecipient = msg.sender;
         OwnableUpgradeable.__Ownable_init();
@@ -299,7 +302,7 @@ contract NiftyTools is EventsPage {
     /**
         @notice user withdraws muse from balance
      */
-    function withdrawMuse() external {
+    function withdrawMuse() external virtual {
         uint256 toWithdraw = museBalance[msg.sender];
         require(toWithdraw > 0, "ZERO BALANCE");
 

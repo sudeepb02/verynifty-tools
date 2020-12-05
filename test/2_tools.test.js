@@ -1,3 +1,5 @@
+const AdminUpgradeabilityProxy = artifacts.require("AdminUpgradeabilityProxy");
+
 const NiftyTools = artifacts.require("NiftyTools");
 const MuseToken = artifacts.require("MuseToken");
 const VNFT = artifacts.require("VNFT");
@@ -19,18 +21,27 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
     vNFT = await VNFT.new(muse.address);
     chi = await ChiToken.new();
     gasFeed = await GasFeed.new();
-    tools = await NiftyTools.new(
+    implementation = await NiftyTools.new();
+
+    const encoded = implementation.contract.methods.initialize(
       vNFT.address,
       muse.address,
       chi.address,
       gasFeed.address,
-      MUSE_FEE
-    );
+      MUSE_FEE).encodeABI();
 
     await muse.grantRole(
       "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
       vNFT.address
     );
+
+    const proxy = await AdminUpgradeabilityProxy.new(
+      implementation.address,
+      admin,
+      encoded
+    );
+
+    tools = await NiftyTools.at(proxy.address)
   });
 
   describe("Initial Values", () => {
