@@ -2,9 +2,11 @@
 
 pragma solidity ^0.6.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IGasFeed.sol";
 import "./interfaces/IChiToken.sol";
@@ -12,7 +14,7 @@ import "./interfaces/IVNFT.sol";
 
 import "./utils/UintSet.sol";
 
-contract EventsPage is Ownable {
+contract EventsPage is Initializable, OwnableUpgradeable {
     event StartCareTaker(address indexed user, uint256 tokenId);
     event StopCareTaker(address indexed user, uint256 tokenId);
 
@@ -21,7 +23,7 @@ contract EventsPage is Ownable {
 }
 
 contract NiftyTools is EventsPage {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
     using UintSet for UintSet.Set;
 
     // Unordered list of tokens to caretake
@@ -51,19 +53,20 @@ contract NiftyTools is EventsPage {
     // Keep track of the MUSE balance for each user
     mapping(address => uint256) public museBalance;
 
-    constructor(
+    function initialize(
         IVNFT _vnft,
         IMuseToken _muse,
         IChiToken _chi,
         IGasFeed _gasFeed,
         uint256 _fee
-    ) public {
+    ) public initializer {
         vnft = _vnft;
         muse = _muse;
         chi = _chi;
         fee = _fee;
         gasFeed = _gasFeed;
         feeRecipient = msg.sender;
+        OwnableUpgradeable.__Ownable_init();
     }
 
     /**
@@ -312,7 +315,7 @@ contract NiftyTools is EventsPage {
         uint256 tokenId,
         bytes calldata data
     ) external returns (bytes4) {
-        return IERC721Receiver.onERC721Received.selector;
+        return IERC721ReceiverUpgradeable.onERC721Received.selector;
     }
 
     // OWNER FUNCTIONS
