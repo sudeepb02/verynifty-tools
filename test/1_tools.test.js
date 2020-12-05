@@ -1,12 +1,15 @@
 const NiftyTools = artifacts.require("NiftyTools");
 const MuseToken = artifacts.require("MuseToken");
 const VNFT = artifacts.require("VNFT");
+const ChiToken = artifacts.require("ChiToken");
+const GasFeed = artifacts.require("GasFeed");
 
 const { expectRevert } = require("@openzeppelin/test-helpers");
 
 require("./utils");
 
 const MUSE_FEE = 5000; //  5% MUSE per service
+const INITIAL_AMOUNT = 200;
 const toWei = (amount) => web3.utils.toWei(String(amount));
 const fromWei = (amount) => Number(web3.utils.fromWei(String(amount)));
 
@@ -16,7 +19,15 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
   before(async function () {
     muse = await MuseToken.new();
     vNFT = await VNFT.new(muse.address);
-    tools = await NiftyTools.new(vNFT.address, muse.address, MUSE_FEE);
+    chi = await ChiToken.new();
+    gasFeed = await GasFeed.new();
+    tools = await NiftyTools.new(
+      vNFT.address,
+      muse.address,
+      chi.address,
+      gasFeed.address,
+      MUSE_FEE
+    );
 
     await muse.grantRole(
       "0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6",
@@ -49,7 +60,7 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
 
     before(async function () {
       // fund address with MUSE
-      await muse.transfer(alice, toWei(100), { from: operator });
+      await muse.transfer(alice, toWei(INITIAL_AMOUNT), { from: operator });
 
       // Mint 10 vNFTs
       for (let i = 0; i < 10; i++) {
@@ -59,11 +70,14 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
       }
 
       await vNFT.createItem("simple", 5, 100, 3 * 24 * 60 * 60);
+
+      // Approve big amount so we save gas when buying items
+      await tools.approveMuse(toWei("1000000"));
     });
 
     it("should have muse and vnft tokens", async function () {
       const balance = await muse.balanceOf(alice);
-      assert.equal(balance, toWei(100));
+      assert.equal(balance, toWei(INITIAL_AMOUNT));
 
       const owner = await vNFT.ownerOf(0);
       assert.equal(owner, alice);
@@ -100,7 +114,7 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
     });
 
     it("should be able to feed multiple tokens", async function () {
-      await muse.approve(tools.address, toWei(100), { from: alice });
+      await muse.approve(tools.address, toWei(200), { from: alice });
 
       const initialBalance = await muse.balanceOf(alice);
       const initialOperatorBalance = await muse.balanceOf(operator);

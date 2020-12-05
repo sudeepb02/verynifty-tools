@@ -4,7 +4,6 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IGasFeed.sol";
 import "./interfaces/IChiToken.sol";
@@ -30,13 +29,15 @@ contract NiftyTools is EventsPage {
     // External contracts
     IVNFT public vnft;
     IMuseToken public muse;
-    IGasFeed public gasFeed = IGasFeed(
-        0xA417221ef64b1549575C977764E651c9FAB50141
-    );
+    IGasFeed public gasFeed;
+    IChiToken public chi;
+
+    // IGasFeed public gasFeed = IGasFeed(
+    //     0xA417221ef64b1549575C977764E651c9FAB50141
+    // );
     // IChiToken public chi = IChiToken(
     //     0x0000000000004946c0e9F43F4Dee607b0eF1fA1c
     // );
-    IChiToken public chi;
 
     // Contrac Variables
     uint256 public maxIds = 20;
@@ -53,12 +54,14 @@ contract NiftyTools is EventsPage {
         IVNFT _vnft,
         IMuseToken _muse,
         IChiToken _chi,
+        IGasFeed _gasFeed,
         uint256 _fee
     ) public {
         vnft = _vnft;
         muse = _muse;
         chi = _chi;
         fee = _fee;
+        gasFeed = _gasFeed;
         feeRecipient = msg.sender;
     }
 
@@ -103,7 +106,7 @@ contract NiftyTools is EventsPage {
     function claimMultiple(uint256[] memory ids)
         external
         notPaused
-    // discountCHI
+        discountCHI
     {
         require(ids.length <= maxIds, "LENGTH");
 
@@ -138,7 +141,7 @@ contract NiftyTools is EventsPage {
     function feedMultiple(uint256[] memory ids, uint256[] memory itemIds)
         external
         notPaused
-    // discountCHI
+        discountCHI
     {
         require(ids.length <= maxIds, "Too many ids");
         uint256 museCost = _checkAmount(itemIds);
@@ -154,7 +157,7 @@ contract NiftyTools is EventsPage {
         );
 
         for (uint256 i = 0; i < ids.length; i++) {
-            vnft.buyAccesory(ids[i], itemIds[i]);
+            vnft.buyAccesory(ids[i], itemIds[i]); // Buying item
         }
     }
 
@@ -204,7 +207,9 @@ contract NiftyTools is EventsPage {
     /**
         @dev trigger GEM feed of care taken vNFTs
      */
-    function triggerFeed(uint256 itemId) external onlyOwner /*discountCHI*/
+    function triggerFeed(uint256 itemId)
+        external
+        onlyOwner /*discountCHI*/
     {
         uint256 i;
         uint256 limit = careTakerSet.count().sub(nextIndex) > maxIds
