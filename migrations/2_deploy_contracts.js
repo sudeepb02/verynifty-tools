@@ -6,6 +6,10 @@ const VNFT = artifacts.require("VNFT");
 
 const MUSE_FEE = 5000; //  5% fee
 
+const infinite = String(
+  web3.utils.toBN(2).pow(web3.utils.toBN(256)).sub(web3.utils.toBN(1))
+);
+
 module.exports = async function (deployer, network) {
   if (network === "ganache") {
     await deployer.deploy(ChiToken);
@@ -36,4 +40,8 @@ module.exports = async function (deployer, network) {
       MUSE_FEE
     );
   }
+
+  // Approve spending of MUSE to VNFT
+  const tools = await NiftyTools.deployed();
+  await tools.approveMuse(infinite);
 };

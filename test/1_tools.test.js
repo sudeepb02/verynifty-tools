@@ -53,15 +53,12 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
     });
   });
 
-  describe("Tools", () => {
+  describe("Manual Claim/Feed", () => {
     let IDS = [];
 
     before(async function () {
       // fund address with MUSE
       await muse.transfer(alice, toWei(INITIAL_AMOUNT), { from: operator });
-
-      // mint CHI tokens
-      await chi.mint(150, { from: alice });
 
       // Mint 10 vNFTs
       for (let i = 0; i < 10; i++) {
@@ -80,16 +77,11 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
       const balance = await muse.balanceOf(alice);
       assert.equal(balance, toWei(INITIAL_AMOUNT));
 
-      const chiBalance = await chi.balanceOf(alice);
-      assert.equal(chiBalance, 150);
-
       const owner = await vNFT.ownerOf(0);
       assert.equal(owner, alice);
     });
 
     it("should get correct available rewards to claim", async function () {
-      // await advanceTimeAndBlock(25 * 60 * 60); // 25h later
-
       await time.advanceBlock();
       await time.increase(25 * 60 * 60);
 
@@ -141,6 +133,38 @@ contract("NiftyTools", ([operator, alice, bob, charlie]) => {
         fromWei(finalOperatorBalance),
         fromWei(initialOperatorBalance) + 50 * 0.05
       );
+    });
+  });
+
+  describe("Care Taker", () => {
+    let IDS = [];
+
+    before(async function () {
+      // fund address with MUSE
+      await muse.transfer(bob, toWei(INITIAL_AMOUNT), { from: operator });
+
+      // Mint 10 vNFTs
+      for (let i = 0; i < 10; i++) {
+        await vNFT.mint(bob, { from: operator });
+        IDS.push(i + 10);
+      }
+    });
+
+    it("should have muse and vnft tokens", async function () {
+      const balance = await muse.balanceOf(bob);
+      assert.equal(balance, toWei(INITIAL_AMOUNT));
+
+      const owner = await vNFT.ownerOf(10); // starts in 10
+      assert.equal(owner, bob);
+    });
+
+    it("should be able to deposit vnfts to caretake", async function () {
+      await vNFT.setApprovalForAll(tools.address, true, { from: bob });
+
+      await tools.startCareTaking(IDS, { from: bob });
+
+      const newOwner = await vNFT.ownerOf(10);
+      assert.equal(newOwner, tools.address);
     });
   });
 });

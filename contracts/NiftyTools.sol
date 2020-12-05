@@ -4,6 +4,7 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "./interfaces/IMuseToken.sol";
 import "./interfaces/IGasFeed.sol";
 import "./interfaces/IChiToken.sol";
@@ -110,17 +111,23 @@ contract NiftyTools is EventsPage {
     {
         require(ids.length <= maxIds, "LENGTH");
 
+        uint256 initialBalance = muse.balanceOf(address(this));
+
         for (uint256 i = 0; i < ids.length; i++) {
             require(vnft.ownerOf(ids[i]) == msg.sender, "VNFT:OWNERSHIP");
             vnft.claimMiningRewards(ids[i]);
         }
 
+        uint256 museObtained = muse.balanceOf(address(this)).sub(
+            initialBalance
+        );
+
         // Charge fees
-        uint256 feeAmt = muse.balanceOf(address(this)).mul(fee).div(100000);
+        uint256 feeAmt = museObtained.mul(fee).div(100000);
         require(muse.transfer(feeRecipient, feeAmt));
 
         // Send rest to user
-        require(muse.transfer(msg.sender, muse.balanceOf(address(this))));
+        require(muse.transfer(msg.sender, museObtained.sub(feeAmt)));
     }
 
     function _checkAmount(uint256[] memory _itemIds)
@@ -163,20 +170,19 @@ contract NiftyTools is EventsPage {
 
     /**
         @notice start caretaking user vNFTs
-        @dev contract should be whitelisted as caretaker beforehand 
+        @dev contract should approve transfer of the vNFT beforehand
      */
     function startCareTaking(uint256[] memory ids)
         external
         notPaused
-    // discountCHI
+        discountCHI
     {
         require(ids.length <= maxIds, "LENGTH");
 
         for (uint256 i = 0; i < ids.length; i++) {
-            require(
-                vnft.careTaker(ids[i], vnft.ownerOf(ids[i])) == address(this),
-                "VNFT: NOT CARETAKER"
-            );
+            vnft.safeTransferFrom(msg.sender, address(this), ids[i]);
+
+            require(vnft.ownerOf(ids[i]) == address(this), "VNFT: DEPOSIT");
             careTakerSet.insert(ids[i]);
 
             emit StartCareTaker(vnft.ownerOf(ids[i]), ids[i]);
@@ -189,7 +195,7 @@ contract NiftyTools is EventsPage {
     function stopCareTaking(uint256[] memory ids)
         external
         notPaused
-    // discountCHI
+        discountCHI
     {
         require(ids.length <= maxIds, "LENGTH");
 
@@ -298,6 +304,15 @@ contract NiftyTools is EventsPage {
 
         // Send muse to user
         require(muse.transfer(msg.sender, toWithdraw));
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     // OWNER FUNCTIONS

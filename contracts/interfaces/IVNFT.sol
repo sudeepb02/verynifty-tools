@@ -18,4 +18,12 @@ interface IVNFT {
     function ownerOf(uint256 _tokenId) external view returns (address _owner);
 
     function itemPrice(uint256 itemId) external view returns (uint256 _amount);
+
+    function setApprovalForAll(address operator, bool approved) external;
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 }
