@@ -61,7 +61,7 @@ interface IVNFT {
     function itemPrice(uint256 itemId) external view returns (uint256 _amount);
 }
 
-contract NiftyTools {
+contract PersonalNiftyTools {
     IVNFT public vnft;
     IERC20 public muse;
     IChiToken public constant chi = IChiToken(
